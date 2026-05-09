@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import toast, { Toaster } from 'react-hot-toast';
+import { apiUrl } from '../lib/api';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -22,7 +23,7 @@ const ProductDetails = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/products/${id}`);
+        const res = await fetch(apiUrl(`/api/products/${id}`));
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Product not found');
         setProduct(data);

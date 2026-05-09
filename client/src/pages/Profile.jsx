@@ -6,9 +6,9 @@ const Profile = () => {
   const token = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).token : null;
   const userRole = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).role : 'user';
   
-  const { data: profileData, loading, execute: fetchProfile } = useApi('http://localhost:5000/api/user/profile');
-  const updateApi = useApi('http://localhost:5000/api/user/profile', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }});
-  const passwordApi = useApi('http://localhost:5000/api/user/password', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }});
+  const { data: profileData, loading, execute: fetchProfile } = useApi('/api/user/profile');
+  const updateApi = useApi('/api/user/profile', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }});
+  const passwordApi = useApi('/api/user/password', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }});
 
   const [formData, setFormData] = useState({ name: '', phone: '', address: '', profileImage: '' });
   const [passData, setPassData] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });

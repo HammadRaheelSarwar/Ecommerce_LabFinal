@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
+import { apiUrl } from '../lib/api';
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,7 +27,7 @@ const ChatWidget = () => {
     setInput('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/chat', {
+      const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

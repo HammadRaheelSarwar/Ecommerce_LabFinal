@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { resolveApiUrl } from '../lib/api';
 
 const useApi = (url, options = {}, retries = 3, backoff = 1000) => {
   const [data, setData] = useState(null);
@@ -19,7 +20,7 @@ const useApi = (url, options = {}, retries = 3, backoff = 1000) => {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), 10000); // 10s default
 
-        const res = await fetch(customUrl, { ...fetchOptions, signal: controller.signal });
+        const res = await fetch(resolveApiUrl(customUrl), { ...fetchOptions, signal: controller.signal });
         clearTimeout(id);
 
         let json;

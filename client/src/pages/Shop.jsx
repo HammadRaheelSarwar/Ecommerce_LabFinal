@@ -30,7 +30,7 @@ const Shop = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { data: products, loading, error, execute } = useApi('http://localhost:5000/api/products');
+  const { data: products, loading, error, execute } = useApi('/api/products');
 
   const categories = gender === 'Female' ? FEMALE_CATEGORIES : MALE_CATEGORIES;
 
@@ -42,7 +42,7 @@ const Shop = () => {
     const query = activeCategory !== 'All'
       ? `?gender=${gender}&category=${activeCategory}`
       : `?gender=${gender}`;
-    execute(`http://localhost:5000/api/products${query}`);
+    execute(`/api/products${query}`);
   }, [gender, activeCategory]);
 
   return (

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import useApi from '../../hooks/useApi';
+import { apiUrl } from '../../lib/api';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const AdminProducts = () => {
-  const { data: products, loading, error, execute } = useApi('http://localhost:5000/api/products');
+  const { data: products, loading, error, execute } = useApi('/api/products');
   const [productList, setProductList] = useState([]);
   
   const location = useLocation();
@@ -94,7 +95,7 @@ const AdminProducts = () => {
                       <button className="btn btn-outline" style={{padding:'0.4rem', border:'none'}}><Edit2 size={16} color="var(--accent)"/></button>
                       <button className="btn btn-outline" onClick={async () => {
                         if(window.confirm('Delete this product permanently?')) {
-                          await fetch(`http://localhost:5000/api/products/${p._id}`, { method: 'DELETE', headers: {Authorization: `Bearer ${token}`} });
+                          await fetch(apiUrl(`/api/products/${p._id}`), { method: 'DELETE', headers: {Authorization: `Bearer ${token}`} });
                           setProductList(prev => prev.filter(x => x._id !== p._id));
                         }
                       }} style={{padding:'0.4rem', border:'none'}}><Trash2 size={16} color="#ef4444"/></button>

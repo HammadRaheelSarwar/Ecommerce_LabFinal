@@ -4,6 +4,7 @@ import { Users, Package, TrendingUp, DollarSign } from 'lucide-react';
 import { SocketContext } from '../../context/SocketContext';
 import toast, { Toaster } from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { apiUrl } from '../../lib/api';
 
 const StatCard = ({ title, value, icon, color }) => (
   <div className={`glass-panel p-8 rounded-xl flex items-center justify-between shadow-2xl relative overflow-hidden group`}>
@@ -63,10 +64,10 @@ const AdminDashboard = () => {
 
     try {
       const [ordersRes, usersRes] = await Promise.all([
-        fetch('http://localhost:5000/api/orders', {
+        fetch(apiUrl('/api/orders'), {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/admin/users', {
+        fetch(apiUrl('/api/admin/users'), {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

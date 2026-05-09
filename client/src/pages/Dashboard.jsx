@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiUrl } from '../lib/api';
 
 const heroImages = [
   "https://images.unsplash.com/photo-1546868871-7041f2a55e12?q=80&w=1000&auto=format&fit=crop", // smartwatch 2
@@ -22,8 +23,8 @@ const Dashboard = () => {
     const fetchGenderProducts = async () => {
       try {
         const [womenRes, menRes] = await Promise.all([
-          fetch('http://localhost:5000/api/products?gender=Female'),
-          fetch('http://localhost:5000/api/products?gender=Male')
+          fetch(apiUrl('/api/products?gender=Female')),
+          fetch(apiUrl('/api/products?gender=Male'))
         ]);
         const womenData = await womenRes.json();
         const menData = await menRes.json();
@@ -317,4 +318,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
