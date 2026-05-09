@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>All Available - Customer Dashboard</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Serif:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Hide scrollbar for carousel */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#c8c6c5",
+                        "inverse-on-surface": "#2f3131",
+                        "error": "#ffb4ab",
+                        "on-secondary": "#3c2f00",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-secondary-fixed-variant": "#574500",
+                        "surface-container-lowest": "#0c0f0f",
+                        "surface-container": "#1e2020",
+                        "error-container": "#93000a",
+                        "primary-container": "#1a1a1a",
+                        "surface-bright": "#37393a",
+                        "secondary": "#e9c349",
+                        "on-primary-container": "#848282",
+                        "surface": "#121414",
+                        "on-secondary-container": "#342800",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#333535",
+                        "on-secondary-fixed": "#241a00",
+                        "secondary-fixed": "#ffe088",
+                        "on-primary": "#313030",
+                        "primary-fixed": "#e5e2e1",
+                        "outline-variant": "#444748",
+                        "surface-tint": "#c8c6c5",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "tertiary": "#c6c6c7",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#333535",
+                        "surface-container-low": "#1a1c1c",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "surface-container-high": "#282a2b",
+                        "on-primary-fixed": "#1c1b1b",
+                        "surface-dim": "#121414",
+                        "tertiary-container": "#181a1a",
+                        "on-primary-fixed-variant": "#474746",
+                        "on-tertiary-container": "#818383",
+                        "on-surface-variant": "#c4c7c7",
+                        "on-tertiary": "#2f3131",
+                        "secondary-container": "#af8d11",
+                        "outline": "#8e9192",
+                        "on-background": "#e2e2e2",
+                        "on-surface": "#e2e2e2",
+                        "primary-fixed-dim": "#c8c6c5",
+                        "background": "#121414",
+                        "inverse-surface": "#e2e2e2",
+                        "secondary-fixed-dim": "#e9c349",
+                        "inverse-primary": "#5f5e5e",
+                        "on-tertiary-fixed": "#1a1c1c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "section-gap": "120px",
+                        "margin-desktop": "80px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Noto Serif"],
+                        "label-caps": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-xl": ["Noto Serif"],
+                        "headline-md": ["Noto Serif"],
+                        "button": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Noto Serif"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-xl": ["72px", { "lineHeight": "84px", "letterSpacing": "-0.02em", "fontWeight": "400" }],
+                        "headline-md": ["32px", { "lineHeight": "40px", "fontWeight": "400" }],
+                        "button": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "32px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex selection:bg-secondary selection:text-on-secondary">
+<!-- Shared Component: SideNavBar -->
+<nav class="bg-surface-container-low/90 backdrop-blur-2xl h-screen w-64 fixed left-0 top-0 z-40 border-r border-white/5 shadow-2xl shadow-black/50 flex flex-col h-full py-8">
+<!-- Brand / Header -->
+<div class="px-8 mb-12">
+<h1 class="font-headline-sm text-headline-sm text-secondary tracking-tight">All Available</h1>
+</div>
+<!-- User Profile Area -->
+<div class="px-8 mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-white/10">
+<img alt="User Profile" class="w-full h-full object-cover grayscale" data-alt="A high-quality, professional headshot of a sophisticated individual against a dark, minimalist studio background. The lighting is dramatic and moody, casting subtle shadows that highlight their refined features. The image is rendered in deep charcoal tones with subtle warm highlights, perfectly matching the dark luxury aesthetic of the UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8kRaxxE_RWzmbUt0ItjQrMXfeYYMJiBh88QpTrGxPkHaNkklvRiLIE3T07zmv_PG-juXzV_HWuTLSaH2WDGNfmjCj4tNa2QVE7adkoVcYA0ZVeq3KYQTA7So640hz--UN6i1njuCJIx4gE4o4yByozfa745dcMkxr1EVgzIiRn9cFzdxgPF-XAguewLo9iRBEHYu40CgHTQi53igVXnQLTzwUc-t3hqqTrbtTuGRcB-JxkgIIY22hhviTDfr_BPcMPSs1afxmDqA"/>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface">Welcome back</p>
+<p class="font-label-caps text-label-caps text-secondary mt-1">Elite Member</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<ul class="flex flex-col gap-2 px-4 flex-1">
+<!-- Active Tab: Dashboard -->
+<li>
+<a class="flex items-center gap-4 bg-secondary/10 text-secondary border-r-2 border-secondary p-4 rounded-l-lg hover:text-primary transition-all duration-200 translate-x-1" href="#">
+<span class="material-symbols-outlined fill">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant p-4 hover:bg-white/5 rounded-lg hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">package</span>
+<span class="font-label-caps text-label-caps">Orders</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant p-4 hover:bg-white/5 rounded-lg hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-caps text-label-caps">Wishlist</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant p-4 hover:bg-white/5 rounded-lg hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant p-4 hover:bg-white/5 rounded-lg hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">headset_mic</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</li>
+</ul>
+<!-- CTA -->
+<div class="px-8 mt-auto">
+<button class="w-full bg-surface-variant/30 border border-white/10 hover:border-secondary/50 backdrop-blur-md text-secondary font-button text-button py-3 rounded-lg transition-all duration-300">
+                Upgrade Membership
+            </button>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-1 ml-64 p-margin-desktop bg-background min-h-screen">
+<div class="max-w-container-max mx-auto space-y-section-gap">
+<!-- Dashboard Overview (Bento Grid) -->
+<section>
+<div class="mb-8">
+<h2 class="font-headline-md text-headline-md text-on-surface">Overview</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface/30 backdrop-blur-3xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)] rounded-2xl p-8 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<div class="flex items-start justify-between mb-8">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Total Orders</span>
+<span class="material-symbols-outlined text-on-surface-variant">package</span>
+</div>
+<div class="font-display-xl text-display-xl text-on-surface">24</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface/30 backdrop-blur-3xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)] rounded-2xl p-8 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<div class="flex items-start justify-between mb-8">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Saved in Wishlist</span>
+<span class="material-symbols-outlined text-on-surface-variant">favorite</span>
+</div>
+<div class="font-display-xl text-display-xl text-on-surface">12</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-secondary/10 backdrop-blur-3xl border border-secondary/20 shadow-[0_10px_30px_rgba(233,195,73,0.1)] rounded-2xl p-8 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<div class="flex items-start justify-between mb-8">
+<span class="font-label-caps text-label-caps text-secondary">Loyalty Points</span>
+<span class="material-symbols-outlined text-secondary fill">workspace_premium</span>
+</div>
+<div>
+<div class="font-display-xl text-display-xl text-secondary">14.5k</div>
+<div class="font-label-caps text-label-caps text-secondary/70 mt-2">Gold Status</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- AI-Powered Recommendations -->
+<section>
+<div class="flex justify-between items-end mb-8">
+<div>
+<p class="font-label-caps text-label-caps text-secondary mb-2 tracking-widest">AI CURATED</p>
+<h2 class="font-headline-md text-headline-md text-on-surface">Handpicked for You</h2>
+</div>
+<button class="font-button text-button text-on-surface-variant hover:text-on-surface transition-colors">View All</button>
+</div>
+<div class="flex overflow-x-auto gap-gutter pb-8 no-scrollbar snap-x">
+<!-- Product Card 1 -->
+<div class="snap-start shrink-0 w-80 bg-surface/20 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden group cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+<div class="h-96 relative overflow-hidden">
+<img alt="Luxury Watch" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A close-up, dramatic studio shot of a high-end mechanical luxury watch. The watch rests on a sleek, matte black monolithic surface. Cinematic side lighting catches the brushed steel casing and intricate internal movement gears, emitting subtle warm gold reflections. The overall aesthetic is dark, moody, and undeniably premium, consistent with a modern horological gallery." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM4yI88rIlMGqn8FEGr-UekeWd9JkmAsmIrBB3M6Ah3EN98xI8dznpx-uFx3UMTN87PIkHQtMVkMQluFCinZ6BJVaCCKl-reKa-g8B4VY1GLG35EO3bwrf7pPkF3Sw825f3tAf3e_wY2tWkr0loiEgRcZ7Bi68iT5xUhDLDf9RkoHOONbfKm0hJ51DayXwPKNMdxHChGczHtcQy3qL47Kp_YTqDxdnIlSQT0-05vLprMhbZyMbstHISaozWtjFWjvmBOAihcrzoT4"/>
+<!-- Glassmorphic Hover Specs -->
+<div class="absolute inset-0 bg-surface/80 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-6 flex flex-col justify-end">
+<div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">Movement</p>
+<p class="font-body-md text-body-md text-on-surface mt-1">Automatic</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">Case</p>
+<p class="font-body-md text-body-md text-on-surface mt-1">42mm Titanium</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Chronograph T-X</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$4,200</p>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="snap-start shrink-0 w-80 bg-surface/20 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden group cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+<div class="h-96 relative overflow-hidden">
+<img alt="Leather Bag" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="An elegant, minimalist leather duffel bag displayed against a pure deep charcoal background. The bag is made of supple, midnight-black leather with subtle matte gunmetal hardware. The lighting is soft and diffused, highlighting the texture of the material without creating harsh shadows. It conveys a sense of quiet luxury and architectural structure." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAebRzk1p8fIuyMTgdukhAxTw6FAo54VxPQJtXB2HH9ydToVHhJb_gUovVBbeZECDWNMH_WixY4NrM0e6ICsYw370mFOumddX_lk_oHzWKn7pW4OwinPKb3fMn9cKxoGqBlT_cJCKBe9jZFcicBOKhY1rfusZ7Tlq5S50WR9G7zDU-tE4GRRe2jdTNIyd_HIi5aleA6jRolZyCORsHnva-mRHx3QIchOesb0iXE8VGIEdOh9dTJetxz5zmhKWxOzK0fpWMlxRtdopE"/>
+<div class="absolute top-4 right-4 bg-secondary/20 border border-secondary/30 backdrop-blur-md px-3 py-1 rounded-full">
+<span class="font-label-caps text-label-caps text-secondary text-[10px]">Limited Edition</span>
+</div>
+<div class="absolute inset-0 bg-surface/80 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-6 flex flex-col justify-end">
+<div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">Material</p>
+<p class="font-body-md text-body-md text-on-surface mt-1">Full-Grain</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">Origin</p>
+<p class="font-body-md text-body-md text-on-surface mt-1">Italy</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Weekender Noir</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$1,850</p>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="snap-start shrink-0 w-80 bg-surface/20 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden group cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+<div class="h-96 relative overflow-hidden">
+<img alt="High-end Headphones" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A pair of ultra-modern, over-ear noise-canceling headphones suspended in mid-air against a dark, smoky backdrop. The headphones feature sleek aluminum accents and plush black leather ear cups. A single spotlight illuminates them from above, emphasizing their geometric form and futuristic design language. The image feels technological yet highly sophisticated." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB61ysXUK23DJH0lyaWHg1Qcf2TCkIqbLtEmn-PwvOSlRdCsBamjB48eo9s4q9fqVf5B8JDXzGTiufXOyZB1Tz4IEoIiNMlb96CV3d2ddBZOUX84mb4QX1ALFfiXwEywbSPwxzy0qMRfdB0G6k4Oc557t_NEGwnE0lUpAElyXVomJxvVEmkUP21F7hwncsi4bdpuxZjrJDtFxA_eXnn3fj2hVPdRfhU1pjYPnccnk4Ff1FVdOM4RWyXX9lhOguoo-jih7ustpFGPYI"/>
+<div class="absolute inset-0 bg-surface/80 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 p-6 flex flex-col justify-end">
+<div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">Acoustics</p>
+<p class="font-body-md text-body-md text-on-surface mt-1">Planar</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">Battery</p>
+<p class="font-body-md text-body-md text-on-surface mt-1">40 Hours</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Aural V2</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">$890</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Orders Table -->
+<section class="pb-section-gap">
+<div class="mb-8">
+<h2 class="font-headline-md text-headline-md text-on-surface">Recent Acquisitions</h2>
+</div>
+<div class="bg-surface/20 backdrop-blur-2xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-white/10 bg-white/5">
+<th class="py-6 px-8 font-label-caps text-label-caps text-on-surface-variant">Order ID</th>
+<th class="py-6 px-8 font-label-caps text-label-caps text-on-surface-variant">Item</th>
+<th class="py-6 px-8 font-label-caps text-label-caps text-on-surface-variant">Date</th>
+<th class="py-6 px-8 font-label-caps text-label-caps text-on-surface-variant">Status</th>
+<th class="py-6 px-8 font-label-caps text-label-caps text-on-surface-variant text-right">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="group hover:bg-white/5 transition-colors duration-200">
+<td class="py-6 px-8 font-body-md text-body-md text-on-surface">#AA-8472</td>
+<td class="py-6 px-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-variant rounded border border-white/10 overflow-hidden">
+<img alt="Watch Thumbnail" class="w-full h-full object-cover" data-alt="A small, focused thumbnail crop of a luxury mechanical watch dial. The lighting highlights the intricate hands and subtle textures of the watch face. The image is strictly monotone with a hint of gold, fitting seamlessly into a minimalist dark UI data table." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1NuHGgxEwcVr7CzTnW0AD8ZGzUSVDD0VV-4E7WgMdI-bjq_A-xHBkctGMhC_z7ugqyQzNTKcKaN7EKszNqbXU5I7Xmy0Sj_M65wmFil-Ugn2D_-auB0XLNFuid-oH0P_Md4QwSFiKUyiZ9HC3zDstBnpghezBTsQvxAfnrZOQ-0UD3y4Lvm38rC8JSmqwMdkG6YLWXKJx9GG1XhMOK-mPBNygPGpuZgFgNqxEfrD3qD8ABGNYJxpmd35iR0Sjaw2mH_VHk5VtAHY"/>
+</div>
+<span class="font-body-md text-body-md text-on-surface">Chronograph T-X</span>
+</div>
+</td>
+<td class="py-6 px-8 font-body-md text-body-md text-on-surface-variant">Oct 24, 2024</td>
+<td class="py-6 px-8">
+<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-secondary/30 bg-secondary/10 text-secondary font-label-caps text-label-caps text-[10px]">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                        Processing
+                                    </span>
+</td>
+<td class="py-6 px-8 font-body-md text-body-md text-on-surface text-right">$4,200.00</td>
+</tr>
+<tr class="group hover:bg-white/5 transition-colors duration-200">
+<td class="py-6 px-8 font-body-md text-body-md text-on-surface">#AA-8391</td>
+<td class="py-6 px-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-variant rounded border border-white/10 overflow-hidden">
+<img alt="Bag Thumbnail" class="w-full h-full object-cover" data-alt="A macro detail shot of premium black leather texture and gunmetal hardware from a luxury bag. The composition is abstract and focused purely on material quality, lit with soft, cool light against a dark background to emphasize the grain." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtzq_52onWFyU92p8qlIzBIljYbfli6YzRzH5q1xVA96PofqrS1Lemr3DdBemm6miwFrqc_6ww4XJUi_EAGkIU0UMlt6m244XSW3AbRiFR9dV6v4L1KomnBadimNR-WU9rlI39cvsrhT_RPpV1eBKQSZjSidj5e1k7ryFBdbiP-FOaAlfPWGwf9JA3RlpfIquHeynV4Ci8Mdcuzq33Rzno3bxdACRMkSYVs1wZhyZlb4eV8bIvQls3PfSEDwsTHs78EASjLr5ZFRw"/>
+</div>
+<span class="font-body-md text-body-md text-on-surface">Weekender Noir</span>
+</div>
+</td>
+<td class="py-6 px-8 font-body-md text-body-md text-on-surface-variant">Sep 12, 2024</td>
+<td class="py-6 px-8">
+<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/20 bg-white/5 text-on-surface font-label-caps text-label-caps text-[10px]">
+                                        Shipped
+                                    </span>
+</td>
+<td class="py-6 px-8 font-body-md text-body-md text-on-surface text-right">$1,850.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+</body></html>
