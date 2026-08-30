@@ -1,0 +1,13 @@
+{
+  "name": "all-available",
+  "version": "1.0.0",
+  "private": true,
+  "description": "All Available — Luxury Fashion & Lifestyle MERN E-Commerce Store",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "start:server": "npm run start --prefix server",
+    "build:client": "npm run build --prefix client",
+    "seed": "npm run seed --prefix server"
+  }
+}
