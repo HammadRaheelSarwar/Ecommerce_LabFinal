@@ -2,8 +2,10 @@ const jwt = require('jsonwebtoken');
 const AdminUser = require('../models/AdminUser');
 const supabase = require('../config/supabase');
 
+const mongoose = require('mongoose');
+
 const isSupabaseConfigured = () => {
-  return !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
+  return !!supabase;
 };
 
 const adminAuth = async (req, res, next) => {
@@ -14,7 +16,7 @@ const adminAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'all_available_admin_jwt_super_secret_key_2026');
 
     // 1. Try Supabase if configured
     if (isSupabaseConfigured()) {
@@ -40,7 +42,11 @@ const adminAuth = async (req, res, next) => {
       }
     }
 
-    // 2. Fall back to MongoDB
+    // 2. Fall back to MongoDB if connected
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(401).json({ success: false, message: 'Admin not found.' });
+    }
+
     const admin = await AdminUser.findById(decoded.id).select('-passwordHash');
     if (!admin) {
       return res.status(401).json({ success: false, message: 'Admin not found.' });

@@ -26,6 +26,9 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
+// Trust proxy for Vercel / reverse proxies (prevents rate limiter validation errors)
+app.set('trust proxy', 1);
+
 // ─── Connect Database ────────────────────────────────────────
 connectDB();
 

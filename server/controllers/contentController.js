@@ -4,7 +4,7 @@ const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
 
 const isSupabaseConfigured = () => {
-  return !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
+  return !!supabase;
 };
 
 function mapSettings(s) {

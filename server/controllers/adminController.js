@@ -6,11 +6,11 @@ const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
 
 const isSupabaseConfigured = () => {
-  return !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
+  return !!supabase;
 };
 
 const signAdminToken = (id) =>
-  jwt.sign({ id }, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET, {
+  jwt.sign({ id }, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'all_available_admin_jwt_super_secret_key_2026', {
     expiresIn: process.env.ADMIN_JWT_EXPIRES_IN || '1d',
   });
 

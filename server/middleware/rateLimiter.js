@@ -6,15 +6,17 @@ const generalLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false, xForwardedForHeader: false },
   message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
 // Strict limiter for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false, xForwardedForHeader: false },
   message: { success: false, message: 'Too many authentication attempts. Please try again in 15 minutes.' },
 });
 
@@ -22,6 +24,7 @@ const authLimiter = rateLimit({
 const searchLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 60,
+  validate: { trustProxy: false, xForwardedForHeader: false },
   message: { success: false, message: 'Too many search requests.' },
 });
 
