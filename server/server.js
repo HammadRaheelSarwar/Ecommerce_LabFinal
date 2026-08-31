@@ -32,7 +32,11 @@ connectDB();
 // ─── Security Middleware ─────────────────────────────────────
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow serverless, mobile, curl, or same-domain requests without Origin header
+    if (!origin) return callback(null, true);
+    return callback(null, true);
+  },
   credentials: true,
 }));
 
@@ -79,12 +83,14 @@ app.use((req, res) => {
 // ─── Centralized Error Handler ────────────────────────────────
 app.use(errorHandler);
 
-// ─── Start Server ─────────────────────────────────────────────
+// ─── Start Server (Only when run standalone, not in Vercel serverless) ──────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 All Available API running on port ${PORT}`);
-  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   Client URL:  ${process.env.CLIENT_URL || 'http://localhost:5173'}\n`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 All Available API running on port ${PORT}`);
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Client URL:  ${process.env.CLIENT_URL || 'http://localhost:5173'}\n`);
+  });
+}
 
 module.exports = app;

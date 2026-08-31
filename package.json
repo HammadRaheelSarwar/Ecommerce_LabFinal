@@ -4,11 +4,32 @@
   "private": true,
   "description": "All Available — Luxury Fashion & Lifestyle MERN E-Commerce Store",
   "scripts": {
+    "dev": "npm run dev:client",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "start:server": "npm run start --prefix server",
-    "build": "npm install --prefix client && npm run build --prefix client",
+    "build": "npm run build --prefix client",
     "build:client": "npm run build --prefix client",
+    "install:all": "npm install && npm install --prefix client && npm install --prefix server",
     "seed": "npm run seed --prefix server"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "express-validator": "^7.1.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.4.4",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^6.9.14",
+    "slugify": "^1.6.6",
+    "uuid": "^9.0.1"
   }
 }
