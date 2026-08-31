@@ -1,5 +1,10 @@
 const jwt = require('jsonwebtoken');
 const AdminUser = require('../models/AdminUser');
+const supabase = require('../config/supabase');
+
+const isSupabaseConfigured = () => {
+  return !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
+};
 
 const adminAuth = async (req, res, next) => {
   try {
@@ -11,6 +16,31 @@ const adminAuth = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET);
 
+    // 1. Try Supabase if configured
+    if (isSupabaseConfigured()) {
+      const { data: admin, error } = await supabase
+        .from('admin_users')
+        .select('id, name, email, role, is_active')
+        .eq('id', decoded.id)
+        .maybeSingle();
+
+      if (admin) {
+        if (!admin.is_active) {
+          return res.status(401).json({ success: false, message: 'Admin account is deactivated.' });
+        }
+        req.admin = {
+          _id: admin.id,
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          isActive: admin.is_active,
+        };
+        return next();
+      }
+    }
+
+    // 2. Fall back to MongoDB
     const admin = await AdminUser.findById(decoded.id).select('-passwordHash');
     if (!admin) {
       return res.status(401).json({ success: false, message: 'Admin not found.' });

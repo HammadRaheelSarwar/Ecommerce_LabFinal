@@ -1,7 +1,13 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const AdminUser = require('../models/AdminUser');
 const ActivityLog = require('../models/ActivityLog');
+const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
+
+const isSupabaseConfigured = () => {
+  return !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY));
+};
 
 const signAdminToken = (id) =>
   jwt.sign({ id }, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET, {
@@ -14,7 +20,46 @@ exports.adminLogin = async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password) return next(createError('Email and password are required.', 400));
 
-    const admin = await AdminUser.findOne({ email: email.toLowerCase().trim() }).select('+passwordHash');
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Try Supabase if configured
+    if (isSupabaseConfigured()) {
+      const { data: admin, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (admin && admin.password_hash) {
+        const isMatch = await bcrypt.compare(password, admin.password_hash);
+        if (!isMatch) {
+          return next(createError('Invalid credentials.', 401));
+        }
+        if (!admin.is_active) {
+          return next(createError('Admin account is deactivated.', 401));
+        }
+
+        await supabase
+          .from('admin_users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', admin.id);
+
+        const token = signAdminToken(admin.id);
+        const adminData = {
+          _id: admin.id,
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          isActive: admin.is_active,
+          lastLogin: new Date().toISOString(),
+        };
+        return res.json({ success: true, token, admin: adminData });
+      }
+    }
+
+    // 2. Fall back to MongoDB
+    const admin = await AdminUser.findOne({ email: normalizedEmail }).select('+passwordHash');
     if (!admin || !(await admin.comparePassword(password))) {
       return next(createError('Invalid credentials.', 401));
     }

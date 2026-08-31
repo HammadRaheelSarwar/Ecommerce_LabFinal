@@ -25,7 +25,14 @@ export default function AdminLogin() {
       toast.success('Welcome back, Admin!')
       navigate('/admin')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid credentials.')
+      const message =
+        err.response?.data?.message ||
+        (err.response?.status === 405
+          ? 'Backend server not found (HTTP 405). Please verify backend deployment and VITE_API_URL.'
+          : !err.response
+          ? 'Unable to connect to backend server. Please make sure the API is running.'
+          : 'Invalid credentials.')
+      toast.error(message)
     } finally {
       setLoading(false)
     }
