@@ -37,38 +37,10 @@ export default function MobileMenu({ open, onClose, navLinks }) {
               </button>
             </div>
 
-            {/* User status card */}
-            <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-              {isAuthenticated ? (
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-[#0c5a37] text-white flex items-center justify-center font-bold text-sm">
-                    {user?.fullName?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-900">{user?.fullName}</p>
-                    <Link to="/account" onClick={onClose} className="text-[11px] font-semibold text-[#0c5a37] hover:underline">
-                      View Account
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-2 w-full">
-                  <Link
-                    to="/login"
-                    onClick={onClose}
-                    className="flex-1 py-2 text-center text-xs font-bold rounded-lg border border-[#0c5a37] text-[#0c5a37] hover:bg-[#0c5a37] hover:text-white transition-all"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/signup"
-                    onClick={onClose}
-                    className="flex-1 py-2 text-center text-xs font-bold rounded-lg bg-[#00b884] text-white hover:bg-[#00a375] transition-all"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
+            {/* Welcome Tagline */}
+            <div className="px-5 py-3.5 bg-emerald-50/70 border-b border-emerald-100/60">
+              <p className="text-xs font-bold text-[#0c5a37]">Pakistan's Direct Marketplace</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">Everything you love, delivered nationwide</p>
             </div>
 
             {/* Nav links */}
@@ -107,7 +79,7 @@ export default function MobileMenu({ open, onClose, navLinks }) {
                 onClick={onClose}
                 className="flex items-center gap-2 text-xs font-semibold text-gray-700 hover:text-[#0c5a37]"
               >
-                <Heart size={15} /> Saved Wishlist
+                <Heart size={15} /> My Favorites
               </Link>
             </div>
           </motion.aside>

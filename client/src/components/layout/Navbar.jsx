@@ -98,35 +98,25 @@ export default function Navbar() {
                   <Search size={20} />
                 </button>
 
-                {/* Profile */}
-                <Link
-                  to={isAuthenticated ? '/account' : '/login'}
-                  className="flex items-center gap-1.5 px-2 py-1 text-white/90 hover:text-white transition-colors"
-                >
-                  <User size={18} className="text-white" />
-                  <span className="hidden lg:inline text-xs font-sans font-semibold">
-                    {isAuthenticated ? (user?.fullName?.split(' ')[0] || 'Profile') : 'Profile'}
-                  </span>
-                </Link>
-
                 {/* Orders */}
                 <Link
-                  to={isAuthenticated ? '/account/orders' : '/login?redirect=/account/orders'}
+                  to="/orders"
                   className="flex items-center gap-1.5 px-2 py-1 text-white/90 hover:text-white transition-colors"
                 >
                   <Package size={18} className="text-white" />
                   <span className="hidden lg:inline text-xs font-sans font-semibold">Orders</span>
                 </Link>
 
-                {/* Wishlist */}
+                {/* Favorites */}
                 <Link
                   to="/wishlist"
                   className="relative flex items-center gap-1.5 px-2 py-1 text-white/90 hover:text-white transition-colors"
+                  title="Favorites"
                 >
                   <Heart size={18} className="text-white" />
-                  <span className="hidden lg:inline text-xs font-sans font-semibold">Wishlist</span>
+                  <span className="hidden lg:inline text-xs font-sans font-semibold">Favorites</span>
                   {wishlist.length > 0 && (
-                    <span className="absolute -top-1 -right-1 lg:top-0 lg:-right-2 bg-[#00b884] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 lg:top-0 lg:-right-2 bg-[#00b884] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
                       {wishlist.length}
                     </span>
                   )}

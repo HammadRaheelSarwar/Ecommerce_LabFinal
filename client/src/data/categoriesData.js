@@ -102,7 +102,7 @@ export const CATEGORIES_DATA = [
       {
         "name": "Shirt",
         "slug": "shirt",
-        "img": "/images/products/pink-floral-organza-gown-1.webp"
+        "img": "https://content.public.markaz.app/markazimagevideo/public/subcategory/shirt-removebg-preview7250cf8b-a9bc-486e-ac9a-a606a9bf5f43.webp"
       },
       {
         "name": "2 Piece Suits",
@@ -145,7 +145,7 @@ export const CATEGORIES_DATA = [
       {
         "name": "Shirt",
         "slug": "shirt",
-        "img": "/images/products/pink-floral-organza-gown-1.webp"
+        "img": "https://content.public.markaz.app/markazimagevideo/public/subcategory/shirt2-removebg-preview78643308-ab7a-4687-8e9f-5776e8106eb8.webp"
       },
       {
         "name": "Kurta",

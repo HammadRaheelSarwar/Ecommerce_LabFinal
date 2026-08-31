@@ -113,6 +113,15 @@ export default function CategoryPage() {
       list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     }
 
+    // Always display user-added Pink Floral Gown first in the list
+    list.sort((a, b) => {
+      const isA = a.sku === 'MZ779014450ANMCL' || a.name?.includes('Pink Floral')
+      const isB = b.sku === 'MZ779014450ANMCL' || b.name?.includes('Pink Floral')
+      if (isA && !isB) return -1
+      if (!isA && isB) return 1
+      return 0
+    })
+
     return list
   }, [products, sortBy, priceFilter])
 

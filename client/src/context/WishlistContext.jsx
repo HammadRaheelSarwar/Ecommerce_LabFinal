@@ -4,70 +4,58 @@ import api from '../services/api'
 import { useAuth } from './AuthContext'
 
 const WishlistContext = createContext(null)
-const LS_KEY = 'aa_wishlist'
+const LS_IDS_KEY = 'aa_wishlist'
+const LS_ITEMS_KEY = 'aa_favorite_items'
 
-const loadLocal = () => {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || [] } catch { return [] }
+const loadLocalIds = () => {
+  try { return JSON.parse(localStorage.getItem(LS_IDS_KEY)) || [] } catch { return [] }
+}
+
+const loadLocalItems = () => {
+  try { return JSON.parse(localStorage.getItem(LS_ITEMS_KEY)) || [] } catch { return [] }
 }
 
 export const WishlistProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth()
-  const [wishlist, setWishlist] = useState(loadLocal)
+  const [wishlist, setWishlist] = useState(loadLocalIds)
+  const [favoriteItems, setFavoriteItems] = useState(loadLocalItems)
 
-  // Merge on login
+  // Persist IDs and Full Items for guests & offline
   useEffect(() => {
-    if (!isAuthenticated) return
-    const local = loadLocal()
-    const sync = async () => {
-      try {
-        if (local.length > 0) {
-          await api.put('/users/wishlist/sync', { productIds: local })
-        }
-        const res = await api.get('/users/wishlist')
-        const ids = res.data.wishlist.map(w => w.product?._id || w.product)
-        setWishlist(ids)
-        localStorage.removeItem(LS_KEY)
-      } catch (_) {}
-    }
-    sync()
-  }, [isAuthenticated, user?._id])
-
-  // Persist for guests
-  useEffect(() => {
-    if (!isAuthenticated) localStorage.setItem(LS_KEY, JSON.stringify(wishlist))
-  }, [wishlist, isAuthenticated])
+    localStorage.setItem(LS_IDS_KEY, JSON.stringify(wishlist))
+    localStorage.setItem(LS_ITEMS_KEY, JSON.stringify(favoriteItems))
+  }, [wishlist, favoriteItems])
 
   const toggleWishlist = useCallback(async (product) => {
-    const id = product._id
+    if (!product) return
+    const id = String(product._id || product.id || product.slug)
     const isIn = wishlist.includes(id)
 
-    if (isAuthenticated) {
-      try {
-        const res = await api.post(`/users/wishlist/${id}`)
-        if (res.data.inWishlist) {
-          setWishlist(prev => [...prev, id])
-          toast.success('Added to Favorites')
-        } else {
-          setWishlist(prev => prev.filter(w => w !== id))
-          toast.success('Removed from Favorites')
-        }
-      } catch (_) {}
+    if (isIn) {
+      setWishlist(prev => prev.filter(w => w !== id))
+      setFavoriteItems(prev => prev.filter(p => String(p._id || p.id || p.slug) !== id))
+      toast.success('Removed from Favorites', { icon: '🤍' })
+      if (isAuthenticated) {
+        try { await api.post(`/users/wishlist/${id}`) } catch (_) {}
+      }
     } else {
-      // Guest — local only
-      if (isIn) {
-        setWishlist(prev => prev.filter(w => w !== id))
-        toast.success('Removed from Favorites')
-      } else {
-        setWishlist(prev => [...prev, id])
-        toast.success('Added to Favorites')
+      setWishlist(prev => [...prev, id])
+      setFavoriteItems(prev => [product, ...prev.filter(p => String(p._id || p.id || p.slug) !== id)])
+      toast.success('Added to Favorites', { icon: '❤️' })
+      if (isAuthenticated) {
+        try { await api.post(`/users/wishlist/${id}`) } catch (_) {}
       }
     }
   }, [isAuthenticated, wishlist])
 
-  const isInWishlist = useCallback((id) => wishlist.includes(id), [wishlist])
+  const isInWishlist = useCallback((idOrSlug) => {
+    if (!idOrSlug) return false
+    const str = String(idOrSlug)
+    return wishlist.includes(str) || favoriteItems.some(p => String(p._id || p.id || p.slug) === str)
+  }, [wishlist, favoriteItems])
 
   return (
-    <WishlistContext.Provider value={{ wishlist, toggleWishlist, isInWishlist }}>
+    <WishlistContext.Provider value={{ wishlist, favoriteItems, toggleWishlist, isInWishlist }}>
       {children}
     </WishlistContext.Provider>
   )

@@ -5,7 +5,7 @@ const slugify = require('slugify');
 const supabase = require('../config/supabase');
 
 async function seedSupabase() {
-  console.log('🚀 Starting Supabase Database Seeding...');
+  console.log('🚀 Starting Supabase Database Seeding (Real Products Only)...');
 
   if (!process.env.SUPABASE_URL || (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_ANON_KEY)) {
     console.error('❌ Error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in server/.env.');
@@ -15,7 +15,7 @@ async function seedSupabase() {
   try {
     // 1. Seed Website Settings
     console.log('📦 Seeding Website Settings...');
-    const { error: settingsError } = await supabase.from('website_settings').upsert({
+    await supabase.from('website_settings').upsert({
       id: 'primary',
       site_name: 'All Available',
       site_tagline: 'Everything You Desire, All Available.',
@@ -53,22 +53,16 @@ async function seedSupabase() {
       },
     });
 
-    if (settingsError) {
-      console.warn('Settings warning:', settingsError.message);
-    } else {
-      console.log('✅ Website settings seeded');
-    }
-
-    // 2. Seed Categories & Products from categoriesData.js
+    // 2. Seed Categories from categoriesData.js
     const catFilePath = path.join(__dirname, '..', '..', 'client', 'src', 'data', 'categoriesData.js');
     const content = fs.readFileSync(catFilePath, 'utf8');
     const arrayMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (!arrayMatch) throw new Error('Could not find CATEGORIES_DATA in categoriesData.js');
     const categoriesData = JSON.parse(arrayMatch[0]);
 
-    console.log(`📦 Seeding ${categoriesData.length} Categories & Products...`);
+    console.log(`📦 Seeding ${categoriesData.length} Categories...`);
 
-    let totalProductsSeeded = 0;
+    let womanCatId = null;
 
     for (const cat of categoriesData) {
       const catSlug = cat.slug || slugify(cat.name, { lower: true, strict: true });
@@ -81,7 +75,7 @@ async function seedSupabase() {
         isActive: true,
       }));
 
-      const { data: catDoc, error: catError } = await supabase
+      const { data: catDoc } = await supabase
         .from('categories')
         .upsert(
           {
@@ -97,71 +91,50 @@ async function seedSupabase() {
         .select()
         .single();
 
-      if (catError) {
-        console.error(`Error upserting category ${cat.name}:`, catError.message);
-        continue;
-      }
-
-      const categoryId = catDoc.id;
-
-      // Seed sample products for subcategories
-      const subList = cat.subcategories && cat.subcategories.length > 0
-        ? cat.subcategories.slice(0, 4)
-        : [{ name: cat.name, slug: catSlug, img: cat.icon }];
-
-      for (const sub of subList) {
-        const productTemplates = [
-          { prefix: 'Embroidered', price: 1450, discount: 25 },
-          { prefix: 'Digital Printed', price: 990, discount: 15 },
-          { prefix: 'Luxury Festive', price: 2850, discount: 30 },
-        ];
-
-        for (let i = 0; i < productTemplates.length; i++) {
-          const t = productTemplates[i];
-          const prodName = `${t.prefix} ${sub.name}`;
-          const prodSlug = `${slugify(prodName, { lower: true, strict: true })}-${catSlug.slice(0, 4)}-${i + 1}`;
-          const salePrice = t.price;
-          const basePrice = Math.round(salePrice / (1 - t.discount / 100));
-
-          const { error: prodError } = await supabase.from('products').upsert(
-            {
-              name: prodName,
-              slug: prodSlug,
-              sku: `AA-${catSlug.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
-              description: `Authentic premium ${prodName}. Crafted with high-grade materials and detailed finishing for everyday and festive elegance.`,
-              short_description: `Premium ${sub.name} by All Available.`,
-              category_id: categoryId,
-              subcategory: sub.name,
-              brand: 'All Available',
-              base_price: basePrice,
-              sale_price: salePrice,
-              discount_percentage: t.discount,
-              rating: 4.8,
-              review_count: 14 + (i * 7),
-              images: [
-                { url: sub.img || cat.icon || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80', isMain: true }
-              ],
-              variants: [
-                { size: 'Standard', color: 'Multicolor', stock: 15, lowStockAlert: 3 },
-                { size: 'Medium', color: 'Classic', stock: 10, lowStockAlert: 2 },
-              ],
-              is_best_seller: i === 0,
-              is_featured: i === 1,
-              is_new_arrival: i === 2,
-              is_active: true,
-              allow_whatsapp: true,
-              allow_email: true,
-            },
-            { onConflict: 'slug' }
-          );
-
-          if (!prodError) totalProductsSeeded++;
-        }
+      if (catSlug === 'women-s-unstitched' && catDoc) {
+        womanCatId = catDoc.id;
       }
     }
 
-    console.log(`✅ Seeded ${categoriesData.length} categories and ${totalProductsSeeded} products into Supabase!`);
-    console.log('🎉 Supabase Seeding Completed Successfully!');
+    // 3. Seed verified real product Pink Floral Gown
+    if (womanCatId) {
+      console.log('📦 Seeding verified product Pink Floral Gown...');
+      await supabase.from('products').upsert(
+        {
+          name: 'Pink Floral After Wash Soft Arganza Net Gown',
+          slug: 'pink-floral-after-wash-soft-arganza-net-gown',
+          sku: 'MZ779014450ANMCL',
+          description: 'Exquisite Pink Floral After Wash Soft Organza Net Gown. Tailored with premium imported net organza featuring delicate floral embroidery, soft inner lining, and elegant bell sleeves. Ideal for festive gatherings and luxury formal wear.',
+          short_description: 'Pink Floral Soft Organza Net Gown with delicate embroidery.',
+          category_id: womanCatId,
+          subcategory: 'Shirt',
+          brand: 'All Available Exclusive',
+          base_price: 4500,
+          sale_price: 3450,
+          discount_percentage: 23,
+          rating: 4.9,
+          review_count: 28,
+          images: [
+            { url: '/images/products/pink-floral-organza-gown-1.webp', isMain: true },
+            { url: '/images/products/pink-floral-organza-gown-2.webp', isHover: true }
+          ],
+          variants: [
+            { size: 'Small', color: 'Pink', stock: 12, lowStockAlert: 2 },
+            { size: 'Medium', color: 'Pink', stock: 15, lowStockAlert: 3 },
+            { size: 'Large', color: 'Pink', stock: 10, lowStockAlert: 2 }
+          ],
+          is_best_seller: true,
+          is_featured: true,
+          is_new_arrival: true,
+          is_active: true,
+          allow_whatsapp: true,
+          allow_email: true,
+        },
+        { onConflict: 'slug' }
+      );
+    }
+
+    console.log('🎉 Supabase Seeding Completed (Zero Dummy Products)!');
     process.exit(0);
   } catch (err) {
     console.error('❌ Seeding Error:', err);

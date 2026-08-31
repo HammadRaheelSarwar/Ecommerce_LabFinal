@@ -35,7 +35,7 @@ async function seedMarkaz() {
         isActive: true,
       }));
 
-      const catDoc = await Category.findOneAndUpdate(
+      await Category.findOneAndUpdate(
         { slug: catSlug },
         {
           name: cat.name,
@@ -47,69 +47,57 @@ async function seedMarkaz() {
         },
         { upsert: true, new: true }
       );
-
-      // Seed 2-4 products per subcategory or category
-      const subList = cat.subcategories && cat.subcategories.length > 0
-        ? cat.subcategories.slice(0, 4)
-        : [{ name: cat.name, slug: catSlug, img: cat.icon }];
-
-      for (const sub of subList) {
-        const productTemplates = [
-          { prefix: 'Embroidered', price: 1450, discount: 25 },
-          { prefix: 'Digital Printed', price: 990, discount: 15 },
-          { prefix: 'Luxury Festive', price: 2850, discount: 30 },
-        ];
-
-        for (let i = 0; i < productTemplates.length; i++) {
-          const t = productTemplates[i];
-          const prodName = `${t.prefix} ${sub.name}`;
-          const prodSlug = `${slugify(prodName, { lower: true, strict: true })}-${catSlug.slice(0, 4)}-${i + 1}`;
-
-          const salePrice = t.price;
-          const basePrice = Math.round(salePrice / (1 - t.discount / 100));
-
-          await Product.findOneAndUpdate(
-            { slug: prodSlug },
-            {
-              name: prodName,
-              slug: prodSlug,
-              sku: `AA-${catSlug.slice(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
-              description: `Authentic premium ${prodName}. Crafted with high-grade materials and detailed finishing for everyday and festive elegance.`,
-              shortDescription: `Premium ${sub.name} by All Available.`,
-              category: catDoc._id,
-              subcategory: sub.name,
-              brand: 'All Available',
-              basePrice,
-              salePrice,
-              discountPercentage: t.discount,
-              rating: 4.8,
-              reviewCount: 14 + (i * 7),
-              images: [
-                { url: sub.img || cat.icon || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80', isMain: true }
-              ],
-              variants: [
-                { size: 'Standard', color: 'Multicolor', stock: 15, lowStockAlert: 3 },
-                { size: 'Medium', color: 'Classic', stock: 10, lowStockAlert: 2 },
-              ],
-              isBestSeller: i === 0,
-              isFeatured: i === 1,
-              isNewArrival: i === 2,
-              isActive: true,
-              allowWhatsApp: true,
-              allowEmail: true,
-            },
-            { upsert: true }
-          );
-        }
-      }
     }
 
-    const totalCategories = await Category.countDocuments();
-    const totalProducts = await Product.countDocuments();
-    console.log(`🎉 Successfully seeded Markaz categories: ${totalCategories} categories, ${totalProducts} products!`);
+    console.log('✅ All categories seeded without dummy products.');
+
+    // Ensure the real Woman Shirt product is seeded
+    const womanCat = await Category.findOne({ slug: 'women-s-unstitched' });
+    if (womanCat) {
+      await Product.findOneAndUpdate(
+        { sku: 'MZ779014450ANMCL' },
+        {
+          name: 'Pink Floral After Wash Soft Arganza Net Gown',
+          slug: 'pink-floral-after-wash-soft-arganza-net-gown',
+          sku: 'MZ779014450ANMCL',
+          description: 'Exquisite Pink Floral After Wash Soft Organza Net Gown. Tailored with premium imported net organza featuring delicate floral embroidery, soft inner lining, and elegant bell sleeves. Ideal for festive gatherings and luxury formal wear.',
+          shortDescription: 'Pink Floral Soft Organza Net Gown with delicate embroidery.',
+          category: womanCat._id,
+          subcategory: 'Shirt',
+          brand: 'All Available Exclusive',
+          gender: 'women',
+          material: 'Soft Organza Net',
+          tags: ['Woman Shirt', 'Shirt', 'Organza', 'Floral Gown', 'Festive', 'Pink'],
+          basePrice: 4500,
+          salePrice: 3450,
+          discountPercentage: 23,
+          rating: 4.9,
+          reviewCount: 28,
+          soldCount: 84,
+          isFeatured: true,
+          isBestSeller: true,
+          isNewArrival: true,
+          isActive: true,
+          allowWhatsApp: true,
+          allowEmail: true,
+          images: [
+            { url: '/images/products/pink-floral-organza-gown-1.webp', isMain: true },
+            { url: '/images/products/pink-floral-organza-gown-2.webp', isHover: true }
+          ],
+          variants: [
+            { size: 'Small', color: 'Pink', stock: 12, lowStockAlert: 2 },
+            { size: 'Medium', color: 'Pink', stock: 15, lowStockAlert: 3 },
+            { size: 'Large', color: 'Pink', stock: 10, lowStockAlert: 2 }
+          ]
+        },
+        { upsert: true, new: true }
+      );
+      console.log('✅ Real product Pink Floral Gown verified.');
+    }
+
     process.exit(0);
   } catch (err) {
-    console.error('Error seeding Markaz:', err);
+    console.error('Seeding error:', err);
     process.exit(1);
   }
 }
