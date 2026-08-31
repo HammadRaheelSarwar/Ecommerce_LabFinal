@@ -97,7 +97,7 @@ exports.createOrder = async (req, res, next) => {
 
     const order = await Order.create({
       orderId: generateOrderId(),
-      customer: req.user._id, // from auth middleware — never trust frontend
+      customer: req.user?._id || null, // null for guest checkout
       items: orderItems,
       shippingAddress,
       subtotal,

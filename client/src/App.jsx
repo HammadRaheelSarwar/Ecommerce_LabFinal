@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute, GuestRoute, AdminProtectedRoute } from './routes/RouteGuards'
 import PublicLayout from './layouts/PublicLayout'
 
@@ -14,6 +14,8 @@ const WishlistPage       = lazy(() => import('./pages/WishlistPage'))
 const CartPage           = lazy(() => import('./pages/CartPage'))
 const StaticPage         = lazy(() => import('./pages/StaticPage'))
 const NotFoundPage       = lazy(() => import('./pages/NotFoundPage'))
+
+const OrdersPage          = lazy(() => import('./pages/OrdersPage'))
 
 // ─── Auth Pages ─────────────────────────────────────────────
 const LoginPage          = lazy(() => import('./pages/auth/LoginPage'))
@@ -77,6 +79,8 @@ export default function App() {
           <Route path="/shop/home-page/:slug/:subSlug" element={<CategoryPage />} />
           <Route path="/search"       element={<SearchResultsPage />} />
           <Route path="/wishlist"     element={<WishlistPage />} />
+          <Route path="/orders"       element={<OrdersPage />} />
+          <Route path="/account/orders" element={<OrdersPage />} />
           <Route path="/cart"         element={<CartPage />} />
           <Route path="/contact"      element={<StaticPage />} />
           <Route path="/delivery"     element={<StaticPage />} />
@@ -85,15 +89,15 @@ export default function App() {
           <Route path="/terms"        element={<StaticPage />} />
           <Route path="/faqs"         element={<StaticPage />} />
 
-          {/* Auth routes (guests only) */}
-          <Route path="/login"          element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/signup"         element={<GuestRoute><SignupPage /></GuestRoute>} />
-          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* Checkout (Direct Guest & Fast Checkout — No Login / Register Required) */}
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-confirmation/:orderId" element={<OrderConfirmationPage />} />
 
-          {/* Auth-gated checkout */}
-          <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-          <Route path="/order-confirmation/:orderId" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />
+          {/* Login and Register skipped/removed — redirect straight to checkout */}
+          <Route path="/login" element={<Navigate to="/checkout" replace />} />
+          <Route path="/signup" element={<Navigate to="/checkout" replace />} />
+          <Route path="/forgot-password" element={<Navigate to="/checkout" replace />} />
+          <Route path="/reset-password" element={<Navigate to="/checkout" replace />} />
 
           {/* Account section */}
           <Route path="/account" element={<ProtectedRoute><AccountLayout /></ProtectedRoute>}>

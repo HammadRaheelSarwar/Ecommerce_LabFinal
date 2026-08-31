@@ -16,7 +16,7 @@ const orderItemSchema = new mongoose.Schema({
 const shippingAddressSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   phone: { type: String, required: true },
-  country: { type: String, required: true },
+  country: { type: String, default: 'Pakistan' },
   city: { type: String, required: true },
   area: { type: String },
   address: { type: String, required: true },
@@ -33,7 +33,7 @@ const statusHistorySchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema(
   {
     orderId: { type: String, required: true, unique: true },
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
     items: [orderItemSchema],
     shippingAddress: shippingAddressSchema,
     subtotal: { type: Number, required: true },

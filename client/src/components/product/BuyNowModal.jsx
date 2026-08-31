@@ -72,8 +72,43 @@ export default function BuyNowModal({
     return body
   }
 
+  const recordLocalOrder = (channel = 'WhatsApp') => {
+    try {
+      const existing = JSON.parse(localStorage.getItem('aa_user_orders') || '[]')
+      const orderNumber = `AA-${Math.floor(100000 + Math.random() * 900000)}`
+      const newOrder = {
+        _id: `ord_${Date.now()}`,
+        orderId: orderNumber,
+        createdAt: new Date().toISOString(),
+        orderStatus: 'confirmed',
+        channel: channel,
+        totalItems: quantity,
+        grandTotal: totalPrice,
+        items: [
+          {
+            product: {
+              _id: product._id,
+              name: product.name,
+              slug: product.slug,
+              images: product.images,
+              image: imageUrl,
+            },
+            name: product.name,
+            size: selectedSize || 'Standard',
+            color: selectedColor || '',
+            quantity: quantity,
+            price: price,
+            image: imageUrl,
+          }
+        ]
+      }
+      localStorage.setItem('aa_user_orders', JSON.stringify([newOrder, ...existing]))
+    } catch (_) {}
+  }
+
   const handleWhatsAppOrder = () => {
     analyticsService.trackWhatsAppOrderClick(product, { size: selectedSize, color: selectedColor }, quantity)
+    recordLocalOrder('WhatsApp')
     const encoded = encodeURIComponent(buildWhatsAppMessage())
     const url = `https://wa.me/${whatsappNumber}?text=${encoded}`
     window.open(url, '_blank')
@@ -82,6 +117,7 @@ export default function BuyNowModal({
 
   const handleEmailOrder = () => {
     analyticsService.trackEmailOrderClick(product, { size: selectedSize, color: selectedColor }, quantity)
+    recordLocalOrder('Email')
     const encodedSubject = encodeURIComponent(emailSubject)
     const encodedBody = encodeURIComponent(buildEmailBody())
     const mailtoUrl = `mailto:${orderEmail}?subject=${encodedSubject}&body=${encodedBody}`
@@ -91,6 +127,7 @@ export default function BuyNowModal({
 
   const handleGmailOrder = () => {
     analyticsService.trackEmailOrderClick(product, { size: selectedSize, color: selectedColor }, quantity)
+    recordLocalOrder('Gmail')
     const encodedSubject = encodeURIComponent(emailSubject)
     const encodedBody = encodeURIComponent(buildEmailBody())
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(orderEmail)}&su=${encodedSubject}&body=${encodedBody}`
