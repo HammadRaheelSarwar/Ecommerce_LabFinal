@@ -6,8 +6,8 @@ import { contentService } from '../../services/contentService'
 const DEFAULT_SETTINGS = {
   storeName: 'All Available',
   tagline: 'Everything You Desire, All Available',
-  contactEmail: 'contact@allavailable.com',
-  contactPhone: '+92 300 0000000',
+  contactEmail: 'allavailable.shooping@gmail.com',
+  contactPhone: '+92 306 4538251',
   address: 'Gulberg III, Lahore, Pakistan',
   shippingCost: 200,
   freeShippingThreshold: 5000,
@@ -22,7 +22,13 @@ const DEFAULT_SETTINGS = {
   socialLinks: {
     instagram: 'https://instagram.com',
     facebook: 'https://facebook.com',
-    whatsapp: '+923000000000',
+    whatsapp: '+923064538251',
+  },
+  ordering: {
+    whatsappNumber: '+923064538251',
+    orderEmail: 'allavailable.shooping@gmail.com',
+    whatsappDefaultMessage: '',
+    emailDefaultMessage: '',
   },
 }
 
@@ -160,6 +166,57 @@ export default function Settings() {
               type="text"
               value={settings.address || ''}
               onChange={e => onChange('address', e.target.value)}
+              className="input-luxury"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Direct Ordering (WhatsApp & Email Concierge) */}
+      <div className="bg-black-surface border border-white/5 p-6 space-y-4">
+        <h2 className="font-sans font-bold text-white text-xs tracking-widest uppercase pb-3 border-b border-white/5 flex items-center justify-between">
+          <span>Direct Ordering Channels (Buy Now Modal)</span>
+          <span className="text-gold text-[10px] lowercase font-mono">WhatsApp & Email</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="label-xs">WhatsApp Business Number</label>
+            <input
+              type="text"
+              placeholder="+92 300 1234567"
+              value={settings.ordering?.whatsappNumber ?? settings.socialLinks?.whatsapp ?? '+923001234567'}
+              onChange={e => setSettings(prev => ({
+                ...prev,
+                ordering: { ...(prev.ordering || {}), whatsappNumber: e.target.value }
+              }))}
+              className="input-luxury"
+            />
+            <p className="text-[10px] text-gray-500 mt-1">Customers click Buy Now to send orders to this number.</p>
+          </div>
+          <div>
+            <label className="label-xs">Order Desk Email Address</label>
+            <input
+              type="email"
+              placeholder="orders@allavailable.com"
+              value={settings.ordering?.orderEmail ?? settings.contactEmail ?? 'orders@allavailable.com'}
+              onChange={e => setSettings(prev => ({
+                ...prev,
+                ordering: { ...(prev.ordering || {}), orderEmail: e.target.value }
+              }))}
+              className="input-luxury"
+            />
+            <p className="text-[10px] text-gray-500 mt-1">Pre-filled order inquiries will be directed to this address.</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className="label-xs">Custom Note / Greeting for WhatsApp</label>
+            <input
+              type="text"
+              placeholder="e.g. Hello All Available, I want to order this product:"
+              value={settings.ordering?.whatsappDefaultMessage || ''}
+              onChange={e => setSettings(prev => ({
+                ...prev,
+                ordering: { ...(prev.ordering || {}), whatsappDefaultMessage: e.target.value }
+              }))}
               className="input-luxury"
             />
           </div>

@@ -46,20 +46,20 @@ export const WishlistProvider = ({ children }) => {
         const res = await api.post(`/users/wishlist/${id}`)
         if (res.data.inWishlist) {
           setWishlist(prev => [...prev, id])
-          toast.success('Added to wishlist!')
+          toast.success('Added to Favorites')
         } else {
           setWishlist(prev => prev.filter(w => w !== id))
-          toast.success('Removed from wishlist')
+          toast.success('Removed from Favorites')
         }
       } catch (_) {}
     } else {
       // Guest — local only
       if (isIn) {
         setWishlist(prev => prev.filter(w => w !== id))
-        toast.success('Removed from wishlist')
+        toast.success('Removed from Favorites')
       } else {
         setWishlist(prev => [...prev, id])
-        toast.success('Added to wishlist!')
+        toast.success('Added to Favorites')
       }
     }
   }, [isAuthenticated, wishlist])

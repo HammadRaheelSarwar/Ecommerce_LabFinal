@@ -13,6 +13,7 @@ const EMPTY_PRODUCT = {
   category: '', subcategory: '', gender: 'unisex', material: '', tags: '',
   basePrice: '', salePrice: '', discountPercentage: 0,
   isNewArrival: false, isBestSeller: false, isFeatured: false, isOnSale: false, isActive: true,
+  allowWhatsApp: true, allowEmail: true,
   variants: [{ ...EMPTY_VARIANT }],
   images: [],
 }
@@ -227,6 +228,32 @@ export default function ProductForm() {
               <span className="text-sm text-gray-luxury font-sans">{f.label}</span>
             </label>
           ))}
+        </div>
+      </AdminSection>
+
+      {/* Ordering Channels (WhatsApp & Email) */}
+      <AdminSection title="Ordering Channels">
+        <div className="flex flex-wrap gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="allowWhatsApp"
+              checked={form.allowWhatsApp !== false}
+              onChange={onChange}
+              className="accent-gold w-4 h-4"
+            />
+            <span className="text-sm text-gray-luxury font-sans">Allow WhatsApp Ordering</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="allowEmail"
+              checked={form.allowEmail !== false}
+              onChange={onChange}
+              className="accent-gold w-4 h-4"
+            />
+            <span className="text-sm text-gray-luxury font-sans">Allow Email Ordering</span>
+          </label>
         </div>
       </AdminSection>
 

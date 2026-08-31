@@ -78,7 +78,7 @@ export const CartProvider = ({ children }) => {
       }
       return updated
     })
-    toast.success('Added to bag!')
+    toast.success('Product added to your cart.')
   }, [isAuthenticated])
 
   const removeFromCart = useCallback((productId, size, color) => {

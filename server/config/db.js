@@ -1,22 +1,25 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/all_available';
-  let retries = 5;
+  if (process.env.SUPABASE_URL) {
+    console.log('⚡ Primary Database configured: Supabase Cloud (PostgreSQL)');
+  }
 
-  while (retries > 0) {
-    try {
-      await mongoose.connect(uri);
-      console.log('✅ MongoDB connected:', mongoose.connection.host);
-      return;
-    } catch (err) {
-      retries -= 1;
-      console.error(`❌ MongoDB connection failed. Retries left: ${retries}`);
-      if (retries === 0) {
-        console.error('Could not connect to MongoDB. Exiting.');
-        process.exit(1);
-      }
-      await new Promise((res) => setTimeout(res, 3000));
+  const uri = process.env.MONGODB_URI;
+  if (!uri && process.env.SUPABASE_URL) {
+    // Only Supabase is used, MongoDB not requested
+    return;
+  }
+
+  const mongoUri = uri || 'mongodb://127.0.0.1:27017/all_available';
+  try {
+    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 3000 });
+    console.log('✅ MongoDB connected:', mongoose.connection.host);
+  } catch (err) {
+    if (process.env.SUPABASE_URL) {
+      console.log('ℹ️  MongoDB connection skipped, running seamlessly with Supabase.');
+    } else {
+      console.warn('⚠️ MongoDB connection could not be established:', err.message);
     }
   }
 };

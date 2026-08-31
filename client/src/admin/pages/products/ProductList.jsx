@@ -97,6 +97,7 @@ export default function ProductList() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-sans text-white text-sm font-medium max-w-[200px] truncate">{p.name}</div>
+                    <div className="text-gray-500 font-mono text-[10px] select-all">ID: {p._id || p.id}</div>
                     <div className="text-gray-mid text-xs">{p.category?.name}</div>
                   </td>
                   <td className="px-4 py-3 text-gray-mid text-xs font-sans">{p.sku || '—'}</td>

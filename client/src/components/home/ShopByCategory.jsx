@@ -46,10 +46,10 @@ export default function ShopByCategory() {
               Shop by category
             </h2>
             <Link
-              to="/shop"
+              to="/shop/categories"
               className="flex items-center gap-1 text-xs font-bold text-[#0c5a37] hover:text-[#00b884] transition-colors font-sans"
             >
-              <span>See all</span>
+              <span>See more</span>
               <ChevronRight size={14} />
             </Link>
           </div>

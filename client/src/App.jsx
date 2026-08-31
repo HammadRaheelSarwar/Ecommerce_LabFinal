@@ -8,6 +8,7 @@ const HomePage           = lazy(() => import('./pages/HomePage'))
 const ShopPage           = lazy(() => import('./pages/ShopPage'))
 const ProductPage        = lazy(() => import('./pages/ProductPage'))
 const CategoryPage       = lazy(() => import('./pages/CategoryPage'))
+const AllCategoriesPage  = lazy(() => import('./pages/AllCategoriesPage'))
 const SearchResultsPage  = lazy(() => import('./pages/SearchResultsPage'))
 const WishlistPage       = lazy(() => import('./pages/WishlistPage'))
 const CartPage           = lazy(() => import('./pages/CartPage'))
@@ -67,8 +68,13 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/"             element={<HomePage />} />
           <Route path="/shop"         element={<ShopPage />} />
+          <Route path="/shop/categories" element={<AllCategoriesPage />} />
+          <Route path="/categories"   element={<AllCategoriesPage />} />
           <Route path="/product/:slug" element={<ProductPage />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/category/:slug/:subSlug" element={<CategoryPage />} />
+          <Route path="/shop/home-page/:slug" element={<CategoryPage />} />
+          <Route path="/shop/home-page/:slug/:subSlug" element={<CategoryPage />} />
           <Route path="/search"       element={<SearchResultsPage />} />
           <Route path="/wishlist"     element={<WishlistPage />} />
           <Route path="/cart"         element={<CartPage />} />

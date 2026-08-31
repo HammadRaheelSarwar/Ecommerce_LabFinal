@@ -52,6 +52,8 @@ const productSchema = new mongoose.Schema(
     isBestSeller: { type: Boolean, default: false },
     isOnSale: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    allowWhatsApp: { type: Boolean, default: true },
+    allowEmail: { type: Boolean, default: true },
 
     // Aggregated stats (updated by review/order events)
     rating: { type: Number, default: 0, min: 0, max: 5 },
@@ -66,7 +68,6 @@ const productSchema = new mongoose.Schema(
 );
 
 // Indexes for fast queries
-productSchema.index({ slug: 1 });
 productSchema.index({ category: 1 });
 productSchema.index({ isActive: 1, isFeatured: 1 });
 productSchema.index({ isActive: 1, isNewArrival: 1 });

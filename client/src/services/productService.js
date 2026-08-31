@@ -4,6 +4,7 @@ export const productService = {
   getAll: (params) => api.get('/products', { params }),
   getBySlug: (slug) => api.get(`/products/slug/${slug}`),
   getById: (id) => api.get(`/products/id/${id}`),
+  getSimilar: (slugOrId, limit = 12) => api.get(`/products/slug/${slugOrId}/similar`, { params: { limit } }),
 
   // Admin
   getAllAdmin: (params) => api.get('/products/admin/all', { params }),

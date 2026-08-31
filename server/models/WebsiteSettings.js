@@ -18,10 +18,18 @@ const websiteSettingsSchema = new mongoose.Schema(
 
     // Contact info
     contact: {
-      email: { type: String },
-      phone: { type: String },
-      whatsapp: { type: String },
+      email: { type: String, default: 'allavailable.shooping@gmail.com' },
+      phone: { type: String, default: '+92 306 4538251' },
+      whatsapp: { type: String, default: '+92 306 4538251' },
       address: { type: String },
+    },
+
+    // WhatsApp & Email Ordering defaults
+    ordering: {
+      whatsappNumber: { type: String, default: '+923064538251' },
+      orderEmail: { type: String, default: 'allavailable.shooping@gmail.com' },
+      whatsappDefaultMessage: { type: String, default: '' },
+      emailDefaultMessage: { type: String, default: '' },
     },
 
     // Social media

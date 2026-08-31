@@ -12,6 +12,7 @@ import MobileMenu from './MobileMenu'
 
 const SUB_NAV_ITEMS = [
   { label: 'All',             to: '/shop',                      icon: '📦' },
+  { label: 'Categories',      to: '/shop/categories',           icon: '🏷️' },
   { label: 'Kids & Mother',   to: '/category/women',            icon: '👶' },
   { label: 'Women Corner',    to: '/category/women',            icon: '👗' },
   { label: 'China',           to: '/shop?origin=china',         icon: '🇨🇳' },
