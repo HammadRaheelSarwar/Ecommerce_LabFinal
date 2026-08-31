@@ -1,6 +1,7 @@
 -- ============================================================
 -- All Available — Supabase PostgreSQL Database Schema
--- Run this script in the Supabase SQL Editor (https://supabase.com/dashboard)
+-- STEP 1: Run this ENTIRE script in Supabase SQL Editor
+-- Dashboard → SQL Editor → New Query → Paste → Run
 -- ============================================================
 
 -- Enable UUID extension
@@ -134,6 +135,7 @@ CREATE TABLE IF NOT EXISTS public.reviews (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON public.reviews(product_id);
 
 -- 7. Website Settings Table (Singleton)
@@ -145,7 +147,7 @@ CREATE TABLE IF NOT EXISTS public.website_settings (
     favicon TEXT,
     announcement_bar JSONB DEFAULT '{"isActive": true, "messages": ["Free Delivery on Orders Above Rs. 5,000", "New Collection Has Arrived"]}'::jsonb,
     contact JSONB DEFAULT '{"email": "allavailable.shooping@gmail.com", "phone": "+92 306 4538251", "whatsapp": "+92 306 4538251", "address": "Gulberg III, Lahore, Pakistan"}'::jsonb,
-    ordering JSONB DEFAULT '{"whatsappNumber": "+923064538251", "orderEmail": "allavailable.shooping@gmail.com", "whatsappDefaultMessage": "", "emailDefaultMessage": ""}'::jsonb,
+    ordering JSONB DEFAULT '{"whatsappNumber": "+923064538251", "orderEmail": "allavailable.shooping@gmail.com"}'::jsonb,
     social JSONB DEFAULT '{"instagram": "https://instagram.com", "facebook": "https://facebook.com", "whatsapp": "+923064538251"}'::jsonb,
     shipping JSONB DEFAULT '{"freeShippingThreshold": 5000, "standardShippingCost": 200}'::jsonb,
     footer JSONB DEFAULT '{"copyrightText": "© All Available. All Rights Reserved."}'::jsonb,
@@ -203,7 +205,9 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ============================================================
 -- Enable RLS on all tables
+-- ============================================================
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -217,6 +221,14 @@ ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- Public read access policies for storefront
+-- (DROP first to avoid "already exists" error on re-run)
+DROP POLICY IF EXISTS "Allow public read on categories" ON public.categories;
+DROP POLICY IF EXISTS "Allow public read on products" ON public.products;
+DROP POLICY IF EXISTS "Allow public read on reviews" ON public.reviews;
+DROP POLICY IF EXISTS "Allow public read on website_settings" ON public.website_settings;
+DROP POLICY IF EXISTS "Allow public read on homepage_sections" ON public.homepage_sections;
+DROP POLICY IF EXISTS "Allow public read on banners" ON public.banners;
+
 CREATE POLICY "Allow public read on categories" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Allow public read on products" ON public.products FOR SELECT USING (true);
 CREATE POLICY "Allow public read on reviews" ON public.reviews FOR SELECT USING (is_approved = true);
@@ -224,4 +236,88 @@ CREATE POLICY "Allow public read on website_settings" ON public.website_settings
 CREATE POLICY "Allow public read on homepage_sections" ON public.homepage_sections FOR SELECT USING (is_active = true);
 CREATE POLICY "Allow public read on banners" ON public.banners FOR SELECT USING (is_active = true);
 
--- Note: Express backend using SUPABASE_SERVICE_ROLE_KEY bypasses RLS safely.
+-- ============================================================
+-- STEP 2: After schema is created, run this SEED DATA below
+-- ============================================================
+
+-- Insert Website Settings (Singleton)
+INSERT INTO public.website_settings (id, site_name, site_tagline)
+VALUES ('primary', 'All Available', 'Premium Pakistani Fashion — Cash on Delivery')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert Main Category: Women's Unstitched
+INSERT INTO public.categories (name, slug, description, subcategories, is_active, show_in_nav, sort_order)
+VALUES (
+  'Women''s Unstitched',
+  'womens-unstitched',
+  'Unstitched fabric collections for women',
+  '[
+    {"name": "Shirt", "slug": "shirt", "icon": "https://cdn.markaz.com/categories/shirt.png"},
+    {"name": "2 Piece Suits", "slug": "2-piece-suits"},
+    {"name": "Kurti", "slug": "kurti"},
+    {"name": "Women''s Lehenga", "slug": "womens-lehenga"},
+    {"name": "Trouser", "slug": "trouser"},
+    {"name": "3 Piece Suits", "slug": "3-piece-suits"},
+    {"name": "Saree", "slug": "saree"}
+  ]'::jsonb,
+  true,
+  true,
+  1
+)
+ON CONFLICT (slug) DO NOTHING;
+
+-- Insert the REAL product: Pink Floral After Wash Soft Arganza Net Gown
+INSERT INTO public.products (
+  name,
+  slug,
+  sku,
+  description,
+  short_description,
+  subcategory,
+  base_price,
+  sale_price,
+  discount_percentage,
+  images,
+  variants,
+  is_featured,
+  is_new_arrival,
+  is_best_seller,
+  is_on_sale,
+  is_active,
+  allow_whatsapp,
+  allow_email,
+  tags,
+  category_id
+)
+SELECT
+  'Pink Floral After Wash Soft Arganza Net Gown',
+  'pink-floral-after-wash-soft-arganza-net-gown',
+  'MZ779014450ANMCL',
+  'Elegant Pink Floral After Wash Soft Arganza Net Gown — premium quality fabric with intricate floral patterns. Perfect for formal occasions and weddings. Cash on Delivery available all over Pakistan.',
+  'Premium Pink Floral Arganza Net Gown — Soft After Wash Fabric. Available for Cash on Delivery.',
+  'Shirt',
+  5499,
+  4599,
+  16,
+  '[
+    {"url": "https://ofuhcgtdwjehazorqaqu.supabase.co/storage/v1/object/public/products/pink-floral-organza-gown-1.webp", "alt": "Pink Floral Arganza Net Gown - Model", "isMain": true, "isHover": false, "sortOrder": 1},
+    {"url": "https://ofuhcgtdwjehazorqaqu.supabase.co/storage/v1/object/public/products/pink-floral-organza-gown-2.webp", "alt": "Pink Floral Arganza Net Gown - Fabric Detail", "isMain": false, "isHover": true, "sortOrder": 2}
+  ]'::jsonb,
+  '[
+    {"size": "Small", "color": "Pink", "stock": 50, "isActive": true},
+    {"size": "Medium", "color": "Pink", "stock": 50, "isActive": true},
+    {"size": "Large", "color": "Pink", "stock": 50, "isActive": true},
+    {"size": "X-Large", "color": "Pink", "stock": 30, "isActive": true}
+  ]'::jsonb,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  ARRAY['gown', 'arganza', 'net', 'pink', 'floral', 'women', 'formal'],
+  c.id
+FROM public.categories c
+WHERE c.slug = 'womens-unstitched'
+ON CONFLICT (slug) DO NOTHING;
