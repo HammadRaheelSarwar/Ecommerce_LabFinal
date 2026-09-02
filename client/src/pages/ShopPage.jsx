@@ -6,26 +6,14 @@ import ProductCard from '../components/ui/ProductCard'
 import { productService } from '../services/productService'
 import { categoryService } from '../services/categoryService'
 
+import { useRealtimeProducts, useRealtimeCategories } from '../services/realtimeService'
+
 const SORT_OPTIONS = [
   { label: 'Popular / Trending', value: 'popular' },
   { label: 'Newest Arrivals',     value: 'newest' },
   { label: 'Price: Low to High',  value: 'price_asc' },
   { label: 'Price: High to Low',  value: 'price_desc' },
   { label: 'Top Rated',          value: 'rating' },
-]
-
-const QUICK_CATEGORY_CHIPS = [
-  { label: 'All',                val: '' },
-  { label: '👗 Womens Stitched',  val: 'women' },
-  { label: '🪡 Womens Unstitched',val: 'women' },
-  { label: '👔 Mens Stitched',    val: 'men' },
-  { label: '💄 Cosmetics',       val: 'perfumes' },
-  { label: '💍 Jewellery',        val: 'jewelry' },
-  { label: '⌚ Watches',          val: 'watches' },
-  { label: '👠 Shoes',            val: 'accessories' },
-  { label: '👜 Handbags',         val: 'accessories' },
-  { label: '🇨🇳 China Direct',    val: 'china' },
-  { label: '⚡ Top Deals',        val: 'deals' },
 ]
 
 export default function ShopPage() {
@@ -86,9 +74,29 @@ export default function ShopPage() {
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
-  useEffect(() => {
-    categoryService.getAll().then(res => setCategories(res.data.categories || [])).catch(() => {})
+  const loadCategories = useCallback(() => {
+    categoryService.getAll().then(res => setCategories(res.data?.categories || [])).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
+
+  // Real-time listener for products & categories in Supabase
+  useRealtimeProducts(fetchProducts)
+  useRealtimeCategories(loadCategories)
+
+  // Build dynamic chips from real data
+  const quickChips = [
+    { label: 'All Products', val: '', type: 'all' },
+  ]
+  categories.forEach(c => {
+    quickChips.push({ label: `👗 ${c.name}`, val: c.slug || c._id, type: 'category' })
+    ;(c.subcategories || []).forEach(s => {
+      quickChips.push({ label: `🪡 ${s.name}`, val: s.name, type: 'subcategory' })
+    })
+  })
+  quickChips.push({ label: '⚡ Top Deals', val: 'deals', type: 'deals' })
 
   // Page title
   let pageTitle = 'All Products'
@@ -132,23 +140,23 @@ export default function ShopPage() {
             )}
           </div>
 
-          {/* Quick Category Chips Bar (Like Markaz /shop) */}
+          {/* Quick Category Chips Bar */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pt-5 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {QUICK_CATEGORY_CHIPS.map(chip => {
-              const isActive = (chip.val === '' && !category && !origin && !isOnSale) ||
-                (chip.val === category) ||
-                (chip.val === 'china' && origin === 'china') ||
-                (chip.val === 'deals' && isOnSale === 'true')
+            {quickChips.map(chip => {
+              const isActive = (chip.type === 'all' && !category && !subcategory && !origin && !isOnSale) ||
+                (chip.type === 'category' && category === chip.val) ||
+                (chip.type === 'subcategory' && subcategory === chip.val) ||
+                (chip.type === 'deals' && isOnSale === 'true')
 
               const handleClick = () => {
-                if (chip.val === '') {
+                if (chip.type === 'all') {
                   setSearchParams({})
-                } else if (chip.val === 'china') {
-                  setParam('origin', 'china')
-                } else if (chip.val === 'deals') {
+                } else if (chip.type === 'deals') {
                   setParam('isOnSale', 'true')
-                } else {
+                } else if (chip.type === 'category') {
                   setParam('category', chip.val)
+                } else if (chip.type === 'subcategory') {
+                  setParam('subcategory', chip.val)
                 }
               }
 

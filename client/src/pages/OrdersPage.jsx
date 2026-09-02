@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Package, MessageSquare, ChevronRight, ShoppingBag, ExternalLink, Calendar, CheckCircle2, Truck, Clock } from 'lucide-react'
 import { orderService } from '../services/orderService'
+import { useRealtimeOrders } from '../services/realtimeService'
 
 const STATUS_CONFIG = {
   confirmed:  { label: 'Order Placed',  color: 'bg-emerald-50 text-[#0c5a37] border-emerald-200', icon: CheckCircle2 },
@@ -16,7 +17,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '+923064538251'
 
-  useEffect(() => {
+  const loadOrders = useCallback(() => {
     // 1. Read device-specific orders
     let localOrders = []
     try {
@@ -26,8 +27,7 @@ export default function OrdersPage() {
     // 2. Try fetching server orders (if customer token exists)
     orderService.getMyOrders({ limit: 50 })
       .then(res => {
-        const serverOrders = res.data.orders || []
-        // Merge without duplicate orderId
+        const serverOrders = res.data?.orders || []
         const existingIds = new Set(serverOrders.map(o => o.orderId || o._id))
         const combined = [...serverOrders]
         localOrders.forEach(o => {
@@ -39,11 +39,17 @@ export default function OrdersPage() {
         setOrders(combined)
       })
       .catch(() => {
-        // Fallback to local device orders
         setOrders(localOrders)
       })
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
+
+  // Real-time listener for order updates
+  useRealtimeOrders(loadOrders)
 
   // Calculate totals
   const totalOrdersCount = orders.length

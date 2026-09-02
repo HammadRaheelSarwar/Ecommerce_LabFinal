@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import {
   Search, ShoppingBag, Heart, User, Menu, Camera,
@@ -8,29 +8,56 @@ import { useCart } from '../../context/CartContext'
 import { useSearch } from '../../context/SearchContext'
 import { useAuth } from '../../context/AuthContext'
 import { useWishlist } from '../../context/WishlistContext'
+import { categoryService } from '../../services/categoryService'
+import { useRealtimeCategories } from '../../services/realtimeService'
 import MobileMenu from './MobileMenu'
-
-const SUB_NAV_ITEMS = [
-  { label: 'All',             to: '/shop',                      icon: '📦' },
-  { label: 'Categories',      to: '/shop/categories',           icon: '🏷️' },
-  { label: 'Kids & Mother',   to: '/category/women',            icon: '👶' },
-  { label: 'Women Corner',    to: '/category/women',            icon: '👗' },
-  { label: 'China',           to: '/shop?origin=china',         icon: '🇨🇳' },
-  { label: 'Urdu Bazaar',     to: '/shop?category=bazaar',      icon: '📚' },
-  { label: 'Beauty & Care',   to: '/category/perfumes',         icon: '💄' },
-  { label: 'Men\'s Fashion',  to: '/category/men',              icon: '👔' },
-  { label: 'Home & Living',   to: '/category/accessories',      icon: '🛋' },
-  { label: 'Tech & Tools',    to: '/shop?category=tech',        icon: '📱' },
-]
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
+  const [dbCategories, setDbCategories] = useState([])
   const navigate = useNavigate()
   const { cartCount, setCartOpen } = useCart()
   const { openSearch, setQuery } = useSearch()
   const { user, isAuthenticated } = useAuth()
   const { wishlist } = useWishlist()
+
+  const loadCategories = useCallback(() => {
+    categoryService.getAll()
+      .then(res => {
+        setDbCategories(res.data?.categories || [])
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
+
+  // Real-time listener for category updates
+  useRealtimeCategories(loadCategories)
+
+  // Build dynamic real-time nav items from real Supabase data
+  const dynamicNavItems = [
+    { label: 'All Products', to: '/shop', icon: '📦' },
+    { label: 'Categories', to: '/shop/categories', icon: '🏷️' },
+  ]
+
+  dbCategories.forEach(cat => {
+    dynamicNavItems.push({
+      label: cat.name,
+      to: `/category/${cat.slug}`,
+      icon: '👗',
+    })
+    // Add real subcategories if available
+    ;(cat.subcategories || []).forEach(sub => {
+      dynamicNavItems.push({
+        label: sub.name,
+        to: `/category/${cat.slug}?subcategory=${encodeURIComponent(sub.name)}`,
+        icon: '🪡',
+      })
+    })
+  })
 
   const handleSearchSubmit = (e) => {
     e.preventDefault()
@@ -149,11 +176,11 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Sub-Category Navigation Bar (White row with icons from Screenshot 1) */}
+        {/* Sub-Category Navigation Bar (White row with icons) */}
         <div className="bg-white border-b border-gray-200 overflow-x-auto scrollbar-none no-scrollbar py-2.5">
           <div className="container-markaz">
             <nav className="flex items-center gap-6 text-xs font-sans font-semibold text-gray-700 whitespace-nowrap">
-              {SUB_NAV_ITEMS.map((item) => (
+              {dynamicNavItems.map((item) => (
                 <NavLink
                   key={item.label}
                   to={item.to}
@@ -177,7 +204,7 @@ export default function Navbar() {
       <MobileMenu
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        navLinks={SUB_NAV_ITEMS}
+        navLinks={dynamicNavItems}
       />
     </>
   )

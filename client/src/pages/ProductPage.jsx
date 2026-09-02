@@ -55,7 +55,11 @@ export default function ProductPage() {
 
     productService.getBySlug(slug)
       .then(res => {
-        const p = res.data.product
+        const p = res.data?.product
+        if (!p) {
+          setProduct(null)
+          return
+        }
         setProduct(p)
 
         // Track view and record recently viewed
@@ -64,7 +68,7 @@ export default function ProductPage() {
         setRecentlyViewedList(getRecentlyViewed(p.slug))
 
         // Pre-select variant if available
-        const firstInStock = p.variants?.find(v => v.stock > 0)
+        const firstInStock = p.variants?.find(v => v.stock > 0) || p.variants?.[0]
         if (firstInStock) {
           if (firstInStock.size) setSelectedSize(firstInStock.size)
           if (firstInStock.color) setSelectedColor(firstInStock.color)
@@ -72,77 +76,51 @@ export default function ProductPage() {
 
         // Fetch similar products via backend endpoint
         productService.getSimilar(p.slug, 12)
-          .then(simRes => setSimilarProducts(simRes.data.products || []))
+          .then(simRes => setSimilarProducts(simRes.data?.products || []))
           .catch(() => {})
 
         // Fetch category siblings
-        if (p.category?._id) {
-          productService.getAll({ category: p.category._id, limit: 12 })
+        const catId = p.category?._id || p.category?.id || p.categoryId || p.category_id
+        if (catId) {
+          productService.getAll({ category: catId, limit: 12 })
             .then(catRes => {
-              setCategoryProducts((catRes.data.products || []).filter(item => item.slug !== p.slug))
+              setCategoryProducts((catRes.data?.products || []).filter(item => item.slug !== p.slug))
             })
             .catch(() => {})
         }
 
-        return reviewService.getApproved({ product: p.slug, limit: 10 })
+        // Fetch approved reviews safely without breaking product state
+        reviewService.getApproved({ product: p.slug, limit: 10 })
+          .then(revRes => {
+            if (revRes?.data?.reviews) setReviews(revRes.data.reviews)
+          })
+          .catch(() => {})
       })
-      .then(res => {
-        if (res?.data?.reviews) setReviews(res.data.reviews)
-      })
-      .catch(() => {
-        // Fallback: reconstruct product from slug and category data so the page never breaks with a 404
-        const formattedTitle = slug
-          ? slug
-              .replace(/-[a-z0-9]{3,5}-\d+$/i, '')
-              .replace(/-\d+$/, '')
-              .replace(/-/g, ' ')
-              .replace(/\b\w/g, c => c.toUpperCase())
-          : 'Product'
-
-        const matchingCat = CATEGORIES_DATA.find(c =>
-          slug.includes(c.slug) || (c.subcategories || []).some(s => slug.includes(s.slug))
-        )
-        const matchingSub = matchingCat?.subcategories?.find(s => slug.includes(s.slug))
-        const fallbackImg = matchingSub?.img || matchingCat?.icon || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&q=80'
-
-        const fallbackProduct = {
-          _id: `prod-${slug}`,
-          name: formattedTitle,
-          slug,
-          sku: `AA-${slug.slice(0, 4).toUpperCase()}-101`,
-          description: `Experience exceptional style and authentic quality with ${formattedTitle} from All Available. Carefully curated for elegance, comfort, and premium marketplace standard.`,
-          shortDescription: `${formattedTitle} - Available exclusively at All Available.`,
-          brand: 'All Available',
-          basePrice: 1950,
-          salePrice: 1450,
-          discountPercentage: 25,
-          rating: 4.9,
-          reviewCount: 24,
-          category: matchingCat ? { name: matchingCat.name, slug: matchingCat.slug } : { name: 'Fashion', slug: 'fashion' },
-          subcategory: matchingSub?.name || (matchingCat?.name || 'Collection'),
-          images: [{ url: fallbackImg, isMain: true }],
-          variants: [
-            { size: 'Standard', color: 'Multicolor', stock: 15 },
-            { size: 'Medium', color: 'Classic', stock: 10 },
-          ],
-          allowWhatsApp: true,
-          allowEmail: true,
-        }
-
-        setProduct(fallbackProduct)
-        setSelectedSize('Standard')
-        setSelectedColor('Multicolor')
-        analyticsService.trackProductView(fallbackProduct)
-        addRecentlyViewed(fallbackProduct)
-        setRecentlyViewedList(getRecentlyViewed(slug))
+      .catch((err) => {
+        console.warn('Could not load product:', err)
+        setProduct(null)
       })
       .finally(() => setLoading(false))
   }, [slug, navigate])
 
-  if (loading || !product) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-[#0c5a37] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-200 text-center shadow-xs">
+          <h2 className="font-sans text-xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+          <p className="text-gray-500 text-xs font-sans mb-6">The requested product could not be found or has been removed.</p>
+          <Link to="/shop" className="btn-mint text-xs px-6 py-2.5 inline-flex items-center gap-2">
+            <span>Browse All Products</span>
+          </Link>
+        </div>
       </div>
     )
   }

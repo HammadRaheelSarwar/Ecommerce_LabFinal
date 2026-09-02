@@ -74,18 +74,25 @@ async function fetchProductsFromSupabase(params = {}) {
 
 async function fetchProductBySlugFromSupabase(slug) {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, category:categories(id, name, slug)')
       .eq('slug', slug)
-      .single()
+      .maybeSingle()
 
-    if (error || !data) {
-      // Fallback: try finding any active product if single real product
-      const { data: anyProd } = await supabase.from('products').select('*').limit(1).single()
-      if (anyProd) return { data: { success: true, product: normalizeProduct(anyProd) } }
-      throw error || new Error('Product not found')
+    if (!data) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+      let query = supabase.from('products').select('*, category:categories(id, name, slug)')
+      if (isUuid) {
+        query = query.eq('id', slug)
+      } else {
+        query = query.ilike('slug', `%${slug}%`)
+      }
+      const res = await query.limit(1).maybeSingle()
+      data = res?.data
     }
+
+    if (!data) throw error || new Error('Product not found')
 
     return { data: { success: true, product: normalizeProduct(data) } }
   } catch (err) {
@@ -98,11 +105,11 @@ async function fetchProductByIdFromSupabase(id) {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, category:categories(id, name, slug)')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (error || !data) throw error || new Error('Product not found')
+    if (!data) throw error || new Error('Product not found')
     return { data: { success: true, product: normalizeProduct(data) } }
   } catch (err) {
     console.warn('Supabase getById fallback failed:', err)
@@ -126,7 +133,9 @@ export const productService = {
 
   getBySlug: async (slug) => {
     try {
-      return await api.get(`/products/slug/${slug}`)
+      const res = await api.get(`/products/slug/${slug}`)
+      if (res?.data?.product) return res
+      return await fetchProductBySlugFromSupabase(slug)
     } catch {
       return await fetchProductBySlugFromSupabase(slug)
     }

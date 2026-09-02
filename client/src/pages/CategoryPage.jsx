@@ -1,12 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight, ArrowUp, SlidersHorizontal, Star, Sparkles, Filter } from 'lucide-react'
 import { productService } from '../services/productService'
 import { categoryService } from '../services/categoryService'
-import { CATEGORIES_DATA } from '../data/categoriesData'
+import { useRealtimeProducts, useRealtimeCategories } from '../services/realtimeService'
 import ProductCard from '../components/ui/ProductCard'
-
-
 
 export default function CategoryPage() {
   const { slug, subSlug } = useParams()
@@ -20,46 +18,25 @@ export default function CategoryPage() {
   const [priceFilter, setPriceFilter] = useState('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
 
-  // Find category from CATEGORIES_DATA or backend
-  const activeCategoryData = useMemo(() => {
-    if (!slug) return null
-    const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    return (
-      CATEGORIES_DATA.find(c => c.slug === cleanSlug || c.id === cleanSlug) ||
-      CATEGORIES_DATA.find(c => c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanSlug) ||
-      { name: slug.replace(/-/g, ' '), slug, subcategories: [] }
-    )
-  }, [slug])
-
   // Identify active subcategory
-  const activeSubSlug = subSlug || subcategoryQuery || ''
-  const activeSubcategory = useMemo(() => {
-    if (!activeSubSlug || !activeCategoryData?.subcategories) return null
-    const cleanSub = activeSubSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    return (
-      activeCategoryData.subcategories.find(s => s.slug === cleanSub) ||
-      activeCategoryData.subcategories.find(s => s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanSub) ||
-      { name: activeSubSlug.replace(/-/g, ' '), slug: activeSubSlug }
-    )
-  }, [activeSubSlug, activeCategoryData])
+  const activeSubcategory = subSlug || subcategoryQuery || ''
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     let isMounted = true
     setLoading(true)
 
-    // Try fetching category & products from server API
     categoryService.getBySlug(slug)
       .then(res => {
         if (!isMounted) return
-        const cat = res.data.category
+        const cat = res.data?.category
         setCategory(cat)
 
         const queryParams = {
-          category: cat._id,
+          category: cat?._id || cat?.id || slug,
           limit: 100,
         }
-        if (activeSubcategory?.name) {
-          queryParams.subcategory = activeSubcategory.name
+        if (activeSubcategory) {
+          queryParams.subcategory = activeSubcategory
         }
 
         return productService.getAll(queryParams)
@@ -70,8 +47,7 @@ export default function CategoryPage() {
       })
       .catch(() => {
         if (!isMounted) return
-        // Try fetching by slug directly if category object failed
-        productService.getAll({ category: slug, limit: 100 })
+        productService.getAll({ category: slug, subcategory: activeSubcategory || undefined, limit: 100 })
           .then(res => {
             if (isMounted) setProducts(res?.data?.products || [])
           })
@@ -84,7 +60,15 @@ export default function CategoryPage() {
       })
 
     return () => { isMounted = false }
-  }, [slug, activeSubcategory, activeCategoryData])
+  }, [slug, activeSubcategory])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  // Real-time listener for product & category updates in Supabase
+  useRealtimeProducts(loadData)
+  useRealtimeCategories(loadData)
 
   // Scroll listener for back to top button
   useEffect(() => {
@@ -108,25 +92,16 @@ export default function CategoryPage() {
     } else if (sortBy === 'price_desc') {
       list.sort((a, b) => (b.salePrice || b.basePrice) - (a.salePrice || a.basePrice))
     } else if (sortBy === 'rating') {
-      list.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0))
+      list.sort((a, b) => (b.rating || 0) - (a.rating || 0))
     } else if (sortBy === 'newest') {
       list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     }
 
-    // Always display user-added Pink Floral Gown first in the list
-    list.sort((a, b) => {
-      const isA = a.sku === 'MZ779014450ANMCL' || a.name?.includes('Pink Floral')
-      const isB = b.sku === 'MZ779014450ANMCL' || b.name?.includes('Pink Floral')
-      if (isA && !isB) return -1
-      if (!isA && isB) return 1
-      return 0
-    })
-
     return list
   }, [products, sortBy, priceFilter])
 
-  const categoryName = category?.name || activeCategoryData?.name || slug
-  const currentSubTitle = activeSubcategory?.name || categoryName
+  const categoryName = category?.name || slug.replace(/-/g, ' ')
+  const currentSubTitle = activeSubcategory || categoryName
 
   return (
     <div className="bg-[#FAF6F0] min-h-screen pb-16">
@@ -154,64 +129,54 @@ export default function CategoryPage() {
         <div className="bg-gradient-to-r from-[#FFF5F2] via-[#FCF8F5] to-[#F5FAF8] border border-[#F2E8E4] rounded-3xl p-5 sm:p-7 md:p-8 mb-6 shadow-2xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="inline-block bg-[#E53935] text-white text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
-                SHOP {currentSubTitle.toUpperCase()}
+              <div className="inline-block bg-[#0c5a37] text-white text-[10px] sm:text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
+                COLLECTION: {currentSubTitle.toUpperCase()}
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#070A56] tracking-tight leading-tight">
-                Hand-picked for {currentSubTitle}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#0c5a37] tracking-tight leading-tight">
+                {currentSubTitle}
               </h1>
               <p className="text-[#667085] text-xs sm:text-sm mt-1.5 max-w-xl font-light">
-                Curated by Markaz — refreshed regularly with what's selling now. Cash on delivery ready.
+                Curated by All Available — 100% authentic products directly from verified Pakistani suppliers. Cash on Delivery available nationwide.
               </p>
             </div>
-            {activeSubcategory?.img && (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white border border-[#EAECF0] p-1 shadow-xs overflow-hidden flex-shrink-0 self-start md:self-auto">
-                <img
-                  src={activeSubcategory.img}
-                  alt={currentSubTitle}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              </div>
-            )}
           </div>
         </div>
 
         {/* Sibling Subcategories Bar */}
-        {activeCategoryData?.subcategories?.length > 0 && (
+        {(category?.subcategories || []).length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-bold text-[#070A56] uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#0c5a37] uppercase tracking-wider">
                 Explore {categoryName}
               </span>
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar">
               <Link
-                to={`/category/${activeCategoryData.slug}`}
+                to={`/category/${category?.slug || slug}`}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
                   !activeSubcategory
-                    ? 'bg-[#070A56] text-white shadow-xs'
-                    : 'bg-white border border-[#EAECF0] text-[#344054] hover:border-[#02BC87] hover:text-[#02BC87]'
+                    ? 'bg-[#0c5a37] text-white shadow-xs'
+                    : 'bg-white border border-[#EAECF0] text-[#344054] hover:border-[#00b884] hover:text-[#0c5a37]'
                 }`}
               >
                 All {categoryName}
               </Link>
-              {activeCategoryData.subcategories.map((sub) => {
-                const isSelected = activeSubcategory?.slug === sub.slug
+              {category.subcategories.map((sub, sIdx) => {
+                const isSelected = activeSubcategory === sub.name || activeSubcategory === sub.slug
+                const subImg = sub.img || `/images/products/unstitched-shirt/product-${(sIdx % 48) + 1}-1.webp`
                 return (
                   <Link
-                    key={sub.slug}
-                    to={`/category/${activeCategoryData.slug}/${sub.slug}`}
+                    key={sub.slug || sub.name}
+                    to={`/category/${category.slug}?subcategory=${encodeURIComponent(sub.name)}`}
                     className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                       isSelected
-                        ? 'bg-[#070A56] text-white shadow-xs'
-                        : 'bg-white border border-[#EAECF0] text-[#344054] hover:border-[#02BC87] hover:text-[#02BC87]'
+                        ? 'bg-[#0c5a37] text-white shadow-xs'
+                        : 'bg-white border border-[#EAECF0] text-[#344054] hover:border-[#00b884] hover:text-[#0c5a37]'
                     }`}
                   >
-                    {sub.img && (
-                      <span className="w-4 h-4 rounded-full overflow-hidden inline-block flex-shrink-0">
-                        <img src={sub.img} alt="" className="w-full h-full object-cover" />
-                      </span>
-                    )}
+                    <span className="w-4 h-4 rounded-full overflow-hidden inline-block flex-shrink-0">
+                      <img src={subImg} alt="" className="w-full h-full object-cover" />
+                    </span>
                     <span>{sub.name}</span>
                   </Link>
                 )
