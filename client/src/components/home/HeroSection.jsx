@@ -117,7 +117,7 @@ export default function HeroSection({ data }) {
             />
 
             {/* Slide Content */}
-            <div className="relative z-10 max-w-xl">
+            <div className="relative z-10 max-w-[88%] sm:w-[46%] sm:max-w-none">
               {/* Category Tag Pill */}
               <AnimatePresence mode="wait">
                 <motion.div
@@ -141,7 +141,7 @@ export default function HeroSection({ data }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.4 }}
-                  className={`font-black text-3xl sm:text-4xl md:text-5xl leading-[1.05] mb-4 tracking-tight ${slide.id === 'luxury' ? 'font-serif uppercase text-sky-400 max-w-sm' : 'font-sans'}`}
+                  className={`font-black text-2xl sm:text-3xl lg:text-[38px] leading-[1.08] mb-3 tracking-tight ${slide.id === 'luxury' ? 'font-serif uppercase text-sky-400' : 'font-sans'}`}
                 >
                   {slide.title}
                 </motion.h1>
@@ -155,7 +155,7 @@ export default function HeroSection({ data }) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
-                  className="text-white/85 text-sm sm:text-base leading-relaxed mb-6 max-w-md font-sans font-normal"
+                  className="text-white/90 text-xs sm:text-sm leading-relaxed mb-5 max-w-sm font-sans font-normal"
                 >
                   {slide.subtitle}
                 </motion.p>
@@ -164,7 +164,7 @@ export default function HeroSection({ data }) {
               {/* CTA Button */}
               <Link
                 to={slide.link}
-                className={`${slide.buttonClass} px-6 py-3 text-xs tracking-wider uppercase inline-flex items-center gap-2 rounded-xl shadow-md transition-all active:scale-98`}
+                className={`${slide.buttonClass} px-5 py-2.5 text-[11px] tracking-wider uppercase inline-flex items-center gap-2 rounded-xl shadow-md transition-all active:scale-98`}
               >
                 <span>{slide.cta}</span>
                 <ArrowRight size={14} />
@@ -172,7 +172,7 @@ export default function HeroSection({ data }) {
             </div>
 
             {/* Model / Product Hero Image with Feathered Mask */}
-            <div className={`hidden sm:block absolute pointer-events-none overflow-hidden ${slide.id === 'luxury' ? 'inset-0' : 'right-0 bottom-0 top-0 w-1/2'}`}>
+            <div className={`hidden sm:block absolute pointer-events-none overflow-hidden ${slide.id === 'luxury' ? 'inset-0' : 'right-0 bottom-0 top-0 w-[58%]'}`}>
               <AnimatePresence mode="wait">
                 <motion.img
                   key={slide.image}
