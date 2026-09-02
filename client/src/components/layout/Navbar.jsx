@@ -37,6 +37,23 @@ export default function Navbar() {
   // Real-time listener for category updates
   useRealtimeCategories(loadCategories)
 
+  const getCategoryIcon = (name = '') => {
+    const n = name.toLowerCase()
+    if (n.includes('unstitched') || n.includes('lawn')) return '🪡'
+    if (n.includes('stitched') || n.includes('women')) return '👗'
+    if (n.includes('kid') || n.includes('baby')) return '👶'
+    if (n.includes('men')) return '👔'
+    if (n.includes('cosmetic') || n.includes('beauty') || n.includes('perfume')) return '💄'
+    if (n.includes('jewel')) return '💍'
+    if (n.includes('bag')) return '👜'
+    if (n.includes('shoe')) return '👠'
+    if (n.includes('bed') || n.includes('home') || n.includes('decor')) return '🛋️'
+    if (n.includes('kitchen')) return '🍳'
+    if (n.includes('watch')) return '⌚'
+    if (n.includes('islamic')) return '📿'
+    return '🏷️'
+  }
+
   // Build dynamic real-time nav items from real Supabase data
   const dynamicNavItems = [
     { label: 'All Products', to: '/shop', icon: '📦' },
@@ -47,15 +64,7 @@ export default function Navbar() {
     dynamicNavItems.push({
       label: cat.name,
       to: `/category/${cat.slug}`,
-      icon: '👗',
-    })
-    // Add real subcategories if available
-    ;(cat.subcategories || []).forEach(sub => {
-      dynamicNavItems.push({
-        label: sub.name,
-        to: `/category/${cat.slug}?subcategory=${encodeURIComponent(sub.name)}`,
-        icon: '🪡',
-      })
+      icon: getCategoryIcon(cat.name),
     })
   })
 

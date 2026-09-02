@@ -4,37 +4,73 @@ import { ChevronRight } from 'lucide-react'
 import { categoryService } from '../../services/categoryService'
 import { useRealtimeCategories } from '../../services/realtimeService'
 
+const DEFAULT_ROW_1 = [
+  { name: 'Cosmetics',            slug: 'cosmetics',           img: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=160&q=80' },
+  { name: 'Womens Stitched',      slug: 'womens-stitched',     img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=160&q=80' },
+  { name: 'Kids Clothing',        slug: 'kids-clothing',       img: 'https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=160&q=80' },
+  { name: 'Mens Stitched',        slug: 'mens-stitched',       img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=160&q=80' },
+  { name: 'Jewellery',            slug: 'jewellery',           img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=160&q=80' },
+  { name: 'Fashion Accessories',  slug: 'fashion-accessories', img: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=160&q=80' },
+  { name: 'Bedding',              slug: 'bedding',             img: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=160&q=80' },
+  { name: 'Festive Collection',   slug: 'festive-collection',  img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=160&q=80' },
+  { name: 'Islamic Accessories',  slug: 'islamic-accessories', img: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?w=160&q=80' },
+]
+
+const DEFAULT_ROW_2 = [
+  { name: 'Womens Unstitched',    slug: 'women-s-unstitched',  img: '/images/products/unstitched-shirt/product-1-1.webp' },
+  { name: 'Mens Unstitched',      slug: 'mens-unstitched',     img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=160&q=80' },
+  { name: 'Womens Handbags',      slug: 'womens-handbags',     img: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=160&q=80' },
+  { name: 'Kid Accessories',      slug: 'kid-accessories',     img: 'https://images.unsplash.com/photo-1566454544259-f4b94c3d758c?w=160&q=80' },
+  { name: 'Kitchenware',          slug: 'kitchenware',         img: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=160&q=80' },
+  { name: 'Home Essentials',      slug: 'home-essentials',     img: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=160&q=80' },
+  { name: 'Shoes',                slug: 'shoes',               img: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=160&q=80' },
+  { name: 'Home Decor',           slug: 'home-decor',          img: 'https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?w=160&q=80' },
+  { name: 'Mother & Baby',        slug: 'mother-baby',         img: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=160&q=80' },
+]
+
 export default function ShopByCategory() {
-  const scrollRef = useRef(null)
-  const [categories, setCategories] = useState([])
-  const [items, setItems] = useState([])
+  const row1Ref = useRef(null)
+  const row2Ref = useRef(null)
+  const [row1, setRow1] = useState(DEFAULT_ROW_1)
+  const [row2, setRow2] = useState(DEFAULT_ROW_2)
 
   const loadData = useCallback(() => {
     categoryService.getAll()
       .then(res => {
         const cats = res.data?.categories || []
-        setCategories(cats)
+        if (cats.length > 0) {
+          // Map DB categories by slug or name
+          const catMap = new Map()
+          cats.forEach(c => {
+            catMap.set(c.slug, c)
+            catMap.set(c.name.toLowerCase(), c)
+          })
 
-        // Build list of real subcategories and categories
-        const list = []
-        cats.forEach(cat => {
-          // Add the main category
-          list.push({
-            name: cat.name,
-            to: `/category/${cat.slug}`,
-            img: cat.image?.url || cat.imageUrl || '/images/products/unstitched-shirt/product-1-1.webp',
+          // Enrich Row 1
+          const updatedRow1 = DEFAULT_ROW_1.map(item => {
+            const found = catMap.get(item.slug) || catMap.get(item.name.toLowerCase())
+            return {
+              ...item,
+              to: `/category/${found ? found.slug : item.slug}`,
+              img: found?.imageUrl || found?.image?.url || item.img,
+            }
           })
-          // Add all real subcategories
-          ;(cat.subcategories || []).forEach((sub, sIdx) => {
-            const defaultSubImg = sub.img || `/images/products/unstitched-shirt/product-${(sIdx % 48) + 1}-1.webp`
-            list.push({
-              name: sub.name,
-              to: `/category/${cat.slug}?subcategory=${encodeURIComponent(sub.name)}`,
-              img: defaultSubImg,
-            })
+
+          // Enrich Row 2
+          const updatedRow2 = DEFAULT_ROW_2.map(item => {
+            const found = catMap.get(item.slug) || catMap.get(item.name.toLowerCase())
+            return {
+              ...item,
+              to: `/category/${found ? found.slug : item.slug}`,
+              img: (item.slug === 'women-s-unstitched') 
+                ? '/images/products/unstitched-shirt/product-1-1.webp'
+                : (found?.imageUrl || found?.image?.url || item.img),
+            }
           })
-        })
-        setItems(list)
+
+          setRow1(updatedRow1)
+          setRow2(updatedRow2)
+        }
       })
       .catch(() => {})
   }, [])
@@ -48,10 +84,9 @@ export default function ShopByCategory() {
 
   const scroll = (direction) => {
     const amount = direction === 'left' ? -320 : 320
-    scrollRef.current?.scrollBy({ left: amount, behavior: 'smooth' })
+    row1Ref.current?.scrollBy({ left: amount, behavior: 'smooth' })
+    row2Ref.current?.scrollBy({ left: amount, behavior: 'smooth' })
   }
-
-  if (items.length === 0) return null
 
   return (
     <section className="py-4">
@@ -71,26 +106,52 @@ export default function ShopByCategory() {
             </Link>
           </div>
 
-          {/* Real Categories List */}
+          {/* Row 1 */}
           <div
-            ref={scrollRef}
-            className="flex items-start gap-6 sm:gap-8 overflow-x-auto scrollbar-none no-scrollbar pb-3 scroll-smooth"
+            ref={row1Ref}
+            className="flex items-start gap-6 sm:gap-8 overflow-x-auto scrollbar-none no-scrollbar pb-4 scroll-smooth"
           >
-            {items.map((cat, idx) => (
+            {row1.map((cat, idx) => (
               <Link
                 key={idx}
-                to={cat.to}
-                className="flex flex-col items-center text-center group/item flex-shrink-0 w-24 sm:w-28"
+                to={cat.to || `/category/${cat.slug}`}
+                className="flex flex-col items-center text-center group/item flex-shrink-0 w-20 sm:w-24"
               >
-                <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-2xl bg-[#FAF6F0] p-1 border border-gray-200/80 shadow-2xs group-hover/item:border-[#0c5a37] group-hover/item:scale-105 transition-all overflow-hidden mb-2">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 p-1 border border-gray-200/70 shadow-2xs group-hover/item:border-[#0c5a37] group-hover/item:scale-105 transition-all overflow-hidden mb-2">
                   <img
                     src={cat.img}
                     alt={cat.name}
-                    className="w-full h-full object-cover rounded-xl"
+                    className="w-full h-full object-cover rounded-full"
                     loading="lazy"
                   />
                 </div>
-                <span className="text-xs font-bold text-gray-800 leading-tight group-hover/item:text-[#0c5a37] transition-colors line-clamp-2">
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-700 leading-tight group-hover/item:text-[#0c5a37] transition-colors line-clamp-2">
+                  {cat.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Row 2 */}
+          <div
+            ref={row2Ref}
+            className="flex items-start gap-6 sm:gap-8 overflow-x-auto scrollbar-none no-scrollbar pt-2 pb-1 scroll-smooth"
+          >
+            {row2.map((cat, idx) => (
+              <Link
+                key={idx}
+                to={cat.to || `/category/${cat.slug}`}
+                className="flex flex-col items-center text-center group/item flex-shrink-0 w-20 sm:w-24"
+              >
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 p-1 border border-gray-200/70 shadow-2xs group-hover/item:border-[#0c5a37] group-hover/item:scale-105 transition-all overflow-hidden mb-2">
+                  <img
+                    src={cat.img}
+                    alt={cat.name}
+                    className="w-full h-full object-cover rounded-full"
+                    loading="lazy"
+                  />
+                </div>
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-700 leading-tight group-hover/item:text-[#0c5a37] transition-colors line-clamp-2">
                   {cat.name}
                 </span>
               </Link>
@@ -98,15 +159,13 @@ export default function ShopByCategory() {
           </div>
 
           {/* Right Scroll Arrow */}
-          {items.length > 5 && (
-            <button
-              onClick={() => scroll('right')}
-              aria-label="Scroll right"
-              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-700 hover:text-[#0c5a37] hover:border-[#0c5a37] transition-all z-10 cursor-pointer"
-            >
-              <ChevronRight size={18} />
-            </button>
-          )}
+          <button
+            onClick={() => scroll('right')}
+            aria-label="Scroll right"
+            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-700 hover:text-[#0c5a37] hover:border-[#0c5a37] transition-all z-10 cursor-pointer"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
       </div>
     </section>
