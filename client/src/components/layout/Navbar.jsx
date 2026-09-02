@@ -39,10 +39,10 @@ export default function Navbar() {
 
   const getCategoryIcon = (name = '') => {
     const n = name.toLowerCase()
+    if (n.includes('men') && !n.includes('women')) return '👔'
     if (n.includes('unstitched') || n.includes('lawn')) return '🪡'
     if (n.includes('stitched') || n.includes('women')) return '👗'
     if (n.includes('kid') || n.includes('baby')) return '👶'
-    if (n.includes('men')) return '👔'
     if (n.includes('cosmetic') || n.includes('beauty') || n.includes('perfume')) return '💄'
     if (n.includes('jewel')) return '💍'
     if (n.includes('bag')) return '👜'

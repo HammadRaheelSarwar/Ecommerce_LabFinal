@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { categoryService } from '../../services/categoryService'
 import { useRealtimeCategories } from '../../services/realtimeService'
 
@@ -33,6 +33,8 @@ export default function ShopByCategory() {
   const row2Ref = useRef(null)
   const [row1, setRow1] = useState(DEFAULT_ROW_1)
   const [row2, setRow2] = useState(DEFAULT_ROW_2)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
 
   const loadData = useCallback(() => {
     categoryService.getAll()
@@ -82,10 +84,37 @@ export default function ShopByCategory() {
   // Real-time listener for category changes in Supabase
   useRealtimeCategories(loadData)
 
+  const updateScrollControls = useCallback(() => {
+    const rows = [row1Ref.current, row2Ref.current].filter(Boolean)
+    setCanScrollLeft(rows.some(row => row.scrollLeft > 1))
+    setCanScrollRight(rows.some(
+      row => row.scrollLeft + row.clientWidth < row.scrollWidth - 1
+    ))
+  }, [])
+
+  useEffect(() => {
+    const rows = [row1Ref.current, row2Ref.current].filter(Boolean)
+    const frame = window.requestAnimationFrame(updateScrollControls)
+    const observer = new ResizeObserver(updateScrollControls)
+
+    rows.forEach(row => {
+      observer.observe(row)
+      row.addEventListener('scroll', updateScrollControls, { passive: true })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      observer.disconnect()
+      rows.forEach(row => row.removeEventListener('scroll', updateScrollControls))
+    }
+  }, [row1, row2, updateScrollControls])
+
   const scroll = (direction) => {
-    const amount = direction === 'left' ? -320 : 320
-    row1Ref.current?.scrollBy({ left: amount, behavior: 'smooth' })
-    row2Ref.current?.scrollBy({ left: amount, behavior: 'smooth' })
+    const viewportWidth = row1Ref.current?.clientWidth || 320
+    const amount = Math.max(240, Math.round(viewportWidth * 0.75))
+    const delta = direction === 'left' ? -amount : amount
+    row1Ref.current?.scrollBy({ left: delta, behavior: 'smooth' })
+    row2Ref.current?.scrollBy({ left: delta, behavior: 'smooth' })
   }
 
   return (
@@ -158,14 +187,27 @@ export default function ShopByCategory() {
             ))}
           </div>
 
-          {/* Right Scroll Arrow */}
-          <button
-            onClick={() => scroll('right')}
-            aria-label="Scroll right"
-            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-700 hover:text-[#0c5a37] hover:border-[#0c5a37] transition-all z-10 cursor-pointer"
-          >
-            <ChevronRight size={18} />
-          </button>
+          {/* Carousel controls only appear when more categories exist off-screen. */}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scroll('left')}
+              aria-label="Previous categories"
+              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-700 hover:text-[#0c5a37] hover:border-[#0c5a37] transition-all z-10 cursor-pointer"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scroll('right')}
+              aria-label="Next categories"
+              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 items-center justify-center text-gray-700 hover:text-[#0c5a37] hover:border-[#0c5a37] transition-all z-10 cursor-pointer"
+            >
+              <ChevronRight size={18} />
+            </button>
+          )}
         </div>
       </div>
     </section>

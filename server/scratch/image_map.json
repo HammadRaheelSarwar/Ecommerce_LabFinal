@@ -400,15 +400,15 @@
   ],
   "Product 22": [
     {
-      "fileName": "product-22-1.webp",
-      "url": "/images/products/unstitched-shirt/product-22-1.webp",
+      "fileName": "product-22-2.webp",
+      "url": "/images/products/unstitched-shirt/product-22-2.webp",
       "isMain": true,
       "isHover": false,
       "sortOrder": 1
     },
     {
-      "fileName": "product-22-2.webp",
-      "url": "/images/products/unstitched-shirt/product-22-2.webp",
+      "fileName": "product-22-1.webp",
+      "url": "/images/products/unstitched-shirt/product-22-1.webp",
       "isMain": false,
       "isHover": true,
       "sortOrder": 2
