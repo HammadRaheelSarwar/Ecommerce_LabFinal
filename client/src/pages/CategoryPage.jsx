@@ -3,6 +3,7 @@ import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight, ArrowUp, SlidersHorizontal, Star, Sparkles, Filter } from 'lucide-react'
 import { productService } from '../services/productService'
 import { categoryService } from '../services/categoryService'
+import { CATEGORIES_DATA } from '../data/categoriesData'
 import { useRealtimeProducts, useRealtimeCategories } from '../services/realtimeService'
 import ProductCard from '../components/ui/ProductCard'
 
@@ -18,49 +19,63 @@ export default function CategoryPage() {
   const [priceFilter, setPriceFilter] = useState('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
 
+  // Find category from CATEGORIES_DATA or backend
+  const activeCategoryData = useMemo(() => {
+    if (!slug) return null
+    const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    return (
+      CATEGORIES_DATA.find(c => c.slug === cleanSlug || c.id === cleanSlug) ||
+      CATEGORIES_DATA.find(c => c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanSlug) ||
+      { name: slug.replace(/-/g, ' '), slug, subcategories: [] }
+    )
+  }, [slug])
+
   // Identify active subcategory
-  const activeSubcategory = subSlug || subcategoryQuery || ''
+  const activeSubSlug = subSlug || subcategoryQuery || ''
+  const activeSubcategory = useMemo(() => {
+    if (!activeSubSlug || !activeCategoryData?.subcategories) return null
+    const cleanSub = activeSubSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    return (
+      activeCategoryData.subcategories.find(s => s.slug === cleanSub) ||
+      activeCategoryData.subcategories.find(s => s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') === cleanSub) ||
+      { name: activeSubSlug.replace(/-/g, ' '), slug: activeSubSlug }
+    )
+  }, [activeSubSlug, activeCategoryData])
 
   const loadData = useCallback(() => {
     let isMounted = true
     setLoading(true)
 
-    categoryService.getBySlug(slug)
-      .then(res => {
-        if (!isMounted) return
-        const cat = res.data?.category
-        setCategory(cat)
+    // Normalize category slug for Supabase lookup
+    const isWomenUnstitched = slug?.includes('unstitched') || slug === 'women'
+    const queryCategory = isWomenUnstitched ? 'women-s-unstitched' : slug
 
-        const queryParams = {
-          category: cat?._id || cat?.id || slug,
-          limit: 100,
-        }
-        if (activeSubcategory) {
-          queryParams.subcategory = activeSubcategory
-        }
+    const queryParams = {
+      category: queryCategory,
+      limit: 100,
+    }
 
-        return productService.getAll(queryParams)
-      })
+    if (activeSubcategory?.name) {
+      queryParams.subcategory = activeSubcategory.name
+    } else if (activeSubSlug) {
+      queryParams.subcategory = activeSubSlug
+    }
+
+    productService.getAll(queryParams)
       .then(res => {
         if (!isMounted) return
         setProducts(res?.data?.products || [])
       })
       .catch(() => {
         if (!isMounted) return
-        productService.getAll({ category: slug, subcategory: activeSubcategory || undefined, limit: 100 })
-          .then(res => {
-            if (isMounted) setProducts(res?.data?.products || [])
-          })
-          .catch(() => {
-            if (isMounted) setProducts([])
-          })
+        setProducts([])
       })
       .finally(() => {
         if (isMounted) setLoading(false)
       })
 
     return () => { isMounted = false }
-  }, [slug, activeSubcategory])
+  }, [slug, activeSubcategory, activeSubSlug])
 
   useEffect(() => {
     loadData()
@@ -143,7 +158,7 @@ export default function CategoryPage() {
         </div>
 
         {/* Sibling Subcategories Bar */}
-        {(category?.subcategories || []).length > 0 && (
+        {(activeCategoryData?.subcategories || category?.subcategories || []).length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-bold text-[#0c5a37] uppercase tracking-wider">
@@ -152,7 +167,7 @@ export default function CategoryPage() {
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none no-scrollbar">
               <Link
-                to={`/category/${category?.slug || slug}`}
+                to={`/category/${activeCategoryData?.slug || category?.slug || slug}`}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
                   !activeSubcategory
                     ? 'bg-[#0c5a37] text-white shadow-xs'
@@ -161,13 +176,13 @@ export default function CategoryPage() {
               >
                 All {categoryName}
               </Link>
-              {category.subcategories.map((sub, sIdx) => {
-                const isSelected = activeSubcategory === sub.name || activeSubcategory === sub.slug
+              {(activeCategoryData?.subcategories || category?.subcategories || []).map((sub, sIdx) => {
+                const isSelected = activeSubSlug === sub.slug || activeSubSlug === sub.name || activeSubcategory?.slug === sub.slug || activeSubcategory?.name === sub.name
                 const subImg = sub.img || `/images/products/unstitched-shirt/product-${(sIdx % 48) + 1}-1.webp`
                 return (
                   <Link
                     key={sub.slug || sub.name}
-                    to={`/category/${category.slug}?subcategory=${encodeURIComponent(sub.name)}`}
+                    to={`/category/${activeCategoryData?.slug || category?.slug || slug}/${sub.slug}`}
                     className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                       isSelected
                         ? 'bg-[#0c5a37] text-white shadow-xs'
