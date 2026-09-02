@@ -144,7 +144,7 @@ export default function ShopByCategory() {
               <Link
                 key={idx}
                 to={cat.to || `/category/${cat.slug}`}
-                className="flex flex-col items-center text-center group/item flex-shrink-0 w-20 sm:w-24"
+                className="flex flex-col items-center text-center group/item flex-shrink-0 w-20 sm:w-24 lg:w-28 xl:w-32"
               >
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 p-1 border border-gray-200/70 shadow-2xs group-hover/item:border-[#0c5a37] group-hover/item:scale-105 transition-all overflow-hidden mb-2">
                   <img
@@ -170,7 +170,7 @@ export default function ShopByCategory() {
               <Link
                 key={idx}
                 to={cat.to || `/category/${cat.slug}`}
-                className="flex flex-col items-center text-center group/item flex-shrink-0 w-20 sm:w-24"
+                className="flex flex-col items-center text-center group/item flex-shrink-0 w-20 sm:w-24 lg:w-28 xl:w-32"
               >
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 p-1 border border-gray-200/70 shadow-2xs group-hover/item:border-[#0c5a37] group-hover/item:scale-105 transition-all overflow-hidden mb-2">
                   <img
