@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, Flame, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const HERO_SLIDES = [
@@ -234,62 +234,63 @@ export default function HeroSection({ data }) {
             </div>
           </div>
 
-          {/* Right Side Cards (Pakistan & China Sourcing) */}
+          {/* Right Side Cards (Storefront Collections) */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            {/* Card 1: Shop from Pakistan */}
+            {/* Card 1: New Arrivals */}
             <Link
-              to="/shop?origin=pakistan"
-              className="flex-1 bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between min-h-[185px]"
+              to="/shop?isNewArrival=true"
+              className="flex-1 bg-gradient-to-br from-[#f0fbf6] via-white to-[#e8f7ef] rounded-2xl p-5 border border-emerald-100 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between min-h-[185px]"
             >
               <div className="relative z-10">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#0c5a37] text-[11px] font-bold mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00b884]" />
-                  <span>You're here</span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0c5a37] text-white text-[10px] font-bold uppercase tracking-wider mb-3 shadow-xs">
+                  <Sparkles size={11} />
+                  <span>Fresh this week</span>
                 </div>
-                <h3 className="font-sans font-extrabold text-xl text-gray-900 leading-tight group-hover:text-[#0c5a37] transition-colors">
-                  Shop from Pakistan
+                <h3 className="font-sans font-black text-2xl text-gray-900 leading-tight group-hover:text-[#0c5a37] transition-colors">
+                  New Arrivals
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  Local suppliers from Karachi, Lahore, Faisalabad & Multan
+                <p className="text-xs text-gray-500 mt-1.5 max-w-[250px] leading-relaxed">
+                  Discover the latest fashion, beauty and lifestyle finds added to our collection.
                 </p>
               </div>
 
-              <div className="relative z-10 flex items-center gap-1.5 text-xs font-bold text-[#0c5a37] mt-3">
-                <span>Browse domestic stores</span>
+              <div className="relative z-10 flex items-center gap-1.5 text-xs font-extrabold text-[#0c5a37] mt-3 uppercase tracking-wide">
+                <span>Explore what’s new</span>
                 <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
               </div>
 
-              {/* Pakistan Flag */}
-              <div className="absolute right-0 bottom-0 top-0 w-36 pointer-events-none opacity-25 group-hover:opacity-35 transition-opacity flex items-center justify-end pr-2">
-                <span className="text-6xl select-none">🇵🇰</span>
+              <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-emerald-100/70 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
+              <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/80 border border-emerald-100 shadow-sm text-[#0c5a37] flex items-center justify-center rotate-3 group-hover:rotate-6 transition-transform pointer-events-none">
+                <Sparkles size={28} />
               </div>
             </Link>
 
-            {/* Card 2: Shop from China */}
+            {/* Card 2: Best Sellers */}
             <Link
-              to="/shop?origin=china"
-              className="flex-1 bg-white rounded-2xl p-5 border border-gray-200/80 shadow-xs hover:shadow-md transition-all relative overflow-hidden group flex flex-col justify-between min-h-[185px]"
+              to="/shop?isBestSeller=true"
+              className="flex-1 bg-gradient-to-br from-[#fff8ed] via-white to-[#fff1dc] rounded-2xl p-5 border border-amber-100 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between min-h-[185px]"
             >
               <div className="relative z-10">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-bold mb-2">
-                  <span>Factory Direct</span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider mb-3 shadow-xs">
+                  <Flame size={11} />
+                  <span>Customer favourites</span>
                 </div>
-                <h3 className="font-sans font-extrabold text-xl text-gray-900 leading-tight group-hover:text-rose-700 transition-colors">
-                  Shop from China →
+                <h3 className="font-sans font-black text-2xl text-gray-900 leading-tight group-hover:text-amber-700 transition-colors">
+                  Best Sellers
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  Factory-direct prices, tech, accessories & home items
+                <p className="text-xs text-gray-500 mt-1.5 max-w-[250px] leading-relaxed">
+                  Shop our most-loved products, chosen again and again by happy customers.
                 </p>
               </div>
 
-              <div className="relative z-10 flex items-center gap-1.5 text-xs font-bold text-rose-700 mt-3">
-                <span>Explore China catalog</span>
+              <div className="relative z-10 flex items-center gap-1.5 text-xs font-extrabold text-amber-700 mt-3 uppercase tracking-wide">
+                <span>Shop popular picks</span>
                 <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
               </div>
 
-              {/* China Flag */}
-              <div className="absolute right-0 bottom-0 top-0 w-36 pointer-events-none opacity-25 group-hover:opacity-35 transition-opacity flex items-center justify-end pr-2">
-                <span className="text-6xl select-none">🇨🇳</span>
+              <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-amber-100/80 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
+              <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/80 border border-amber-100 shadow-sm text-amber-600 flex items-center justify-center -rotate-3 group-hover:-rotate-6 transition-transform pointer-events-none">
+                <TrendingUp size={28} />
               </div>
             </Link>
           </div>
