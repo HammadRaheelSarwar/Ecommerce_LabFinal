@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, Flame, TrendingUp } from 'lucide-react'
+import { ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const HERO_SLIDES = [
   {
-    id: 'marketplace',
-    tag: '# Online shopping in Pakistan',
-    title: 'Everything you love, delivered.',
-    subtitle: 'Fashion, beauty, home and more — cash on delivery, fast shipping, easy 7-day returns.',
-    cta: 'Explore Catalog',
+    id: 'luxury',
+    tag: 'New Arrival',
+    title: 'Luxury Collection',
+    subtitle: 'Explore the finest in fashion and lifestyle, curated for a statement-making wardrobe.',
+    cta: 'Shop Now',
     link: '/shop',
-    image: '/images/hero_pakistan_fashion.jpg',
-    gradient: 'from-[#0c5a37] via-[#0e6f43] to-[#073d24]',
-    accentColor: '#00b884',
-    badgeBg: 'bg-black/35 text-emerald-200 border-white/10',
-    buttonClass: 'btn-mint',
+    image: '/images/hero-luxury-collection-v2.jpg',
+    gradient: 'from-[#020711] via-[#06152c] to-[#020711]',
+    accentColor: '#38bdf8',
+    badgeBg: 'bg-sky-400/10 text-sky-300 border-sky-400/25',
+    buttonClass: 'bg-[#087cf0] text-white font-bold hover:bg-[#1690ff]',
   },
   {
     id: 'women-lawn',
@@ -141,7 +141,7 @@ export default function HeroSection({ data }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.4 }}
-                  className="font-sans font-black text-3xl sm:text-4xl md:text-5xl leading-tight mb-4 tracking-tight"
+                  className={`font-black text-3xl sm:text-4xl md:text-5xl leading-[1.05] mb-4 tracking-tight ${slide.id === 'luxury' ? 'font-serif uppercase text-sky-400 max-w-sm' : 'font-sans'}`}
                 >
                   {slide.title}
                 </motion.h1>
@@ -172,7 +172,7 @@ export default function HeroSection({ data }) {
             </div>
 
             {/* Model / Product Hero Image with Feathered Mask */}
-            <div className="hidden sm:block absolute right-0 bottom-0 top-0 w-1/2 pointer-events-none overflow-hidden">
+            <div className={`hidden sm:block absolute pointer-events-none overflow-hidden ${slide.id === 'luxury' ? 'inset-0' : 'right-0 bottom-0 top-0 w-1/2'}`}>
               <AnimatePresence mode="wait">
                 <motion.img
                   key={slide.image}
@@ -183,12 +183,13 @@ export default function HeroSection({ data }) {
                   src={slide.image}
                   alt={slide.title}
                   className="w-full h-full object-cover object-center"
-                  style={{
+                  style={slide.id === 'luxury' ? undefined : {
                     maskImage: 'linear-gradient(to left, black 65%, transparent 100%)',
                     WebkitMaskImage: 'linear-gradient(to left, black 65%, transparent 100%)',
                   }}
                 />
               </AnimatePresence>
+              {slide.id === 'luxury' && <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-transparent" />}
             </div>
 
             {/* Manual Navigation Arrows (Visible on Desktop / Hover) */}
@@ -234,63 +235,51 @@ export default function HeroSection({ data }) {
             </div>
           </div>
 
-          {/* Right Side Cards (Storefront Collections) */}
+          {/* Right Side Editorial Collection Cards */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            {/* Card 1: New Arrivals */}
+            {/* Women's Collection */}
             <Link
-              to="/shop?isNewArrival=true"
-              className="flex-1 bg-gradient-to-br from-[#f0fbf6] via-white to-[#e8f7ef] rounded-2xl p-5 border border-emerald-100 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between min-h-[185px]"
+              to="/category/women-s-unstitched"
+              className="flex-1 rounded-2xl border border-slate-200 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group min-h-[205px] bg-[#e9eef6]"
             >
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0c5a37] text-white text-[10px] font-bold uppercase tracking-wider mb-3 shadow-xs">
-                  <Sparkles size={11} />
-                  <span>Fresh this week</span>
-                </div>
-                <h3 className="font-sans font-black text-2xl text-gray-900 leading-tight group-hover:text-[#0c5a37] transition-colors">
-                  New Arrivals
+              <img
+                src="/images/hero-womens-collection-v2.jpg"
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.025] transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/45 to-transparent" />
+              <div className="relative z-10 h-full p-6 flex flex-col justify-center max-w-[58%]">
+                <span className="text-[10px] uppercase tracking-[0.25em] font-extrabold text-[#0c5a37] mb-2">Curated Edit</span>
+                <h3 className="font-serif font-black text-2xl sm:text-3xl text-[#071328] leading-[1.05] uppercase">
+                  Women’s<br />Collection
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 max-w-[250px] leading-relaxed">
-                  Discover the latest fashion, beauty and lifestyle finds added to our collection.
-                </p>
-              </div>
-
-              <div className="relative z-10 flex items-center gap-1.5 text-xs font-extrabold text-[#0c5a37] mt-3 uppercase tracking-wide">
-                <span>Explore what’s new</span>
-                <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-
-              <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-emerald-100/70 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
-              <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/80 border border-emerald-100 shadow-sm text-[#0c5a37] flex items-center justify-center rotate-3 group-hover:rotate-6 transition-transform pointer-events-none">
-                <Sparkles size={28} />
+                <div className="flex items-center gap-2 text-sm font-bold text-[#071328] mt-5">
+                  <span>Shop now</span>
+                  <ArrowRight size={17} className="group-hover:translate-x-1.5 transition-transform" />
+                </div>
               </div>
             </Link>
 
-            {/* Card 2: Best Sellers */}
+            {/* Men's Collection */}
             <Link
-              to="/shop?isBestSeller=true"
-              className="flex-1 bg-gradient-to-br from-[#fff8ed] via-white to-[#fff1dc] rounded-2xl p-5 border border-amber-100 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between min-h-[185px]"
+              to="/category/mens-stitched"
+              className="flex-1 rounded-2xl border border-slate-800 shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group min-h-[205px] bg-[#031025]"
             >
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider mb-3 shadow-xs">
-                  <Flame size={11} />
-                  <span>Customer favourites</span>
-                </div>
-                <h3 className="font-sans font-black text-2xl text-gray-900 leading-tight group-hover:text-amber-700 transition-colors">
-                  Best Sellers
+              <img
+                src="/images/hero-mens-collection-v2.jpg"
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.025] transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#020711]/95 via-[#020711]/45 to-transparent" />
+              <div className="relative z-10 h-full p-6 flex flex-col justify-center max-w-[58%]">
+                <span className="text-[10px] uppercase tracking-[0.25em] font-extrabold text-sky-400 mb-2">Modern Tailoring</span>
+                <h3 className="font-serif font-black text-2xl sm:text-3xl text-sky-400 leading-[1.05] uppercase">
+                  Men’s<br />Collection
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 max-w-[250px] leading-relaxed">
-                  Shop our most-loved products, chosen again and again by happy customers.
-                </p>
-              </div>
-
-              <div className="relative z-10 flex items-center gap-1.5 text-xs font-extrabold text-amber-700 mt-3 uppercase tracking-wide">
-                <span>Shop popular picks</span>
-                <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-
-              <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-amber-100/80 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
-              <div className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl bg-white/80 border border-amber-100 shadow-sm text-amber-600 flex items-center justify-center -rotate-3 group-hover:-rotate-6 transition-transform pointer-events-none">
-                <TrendingUp size={28} />
+                <div className="flex items-center gap-2 text-sm font-bold text-white mt-5">
+                  <span>Shop now</span>
+                  <ArrowRight size={17} className="text-sky-400 group-hover:translate-x-1.5 transition-transform" />
+                </div>
               </div>
             </Link>
           </div>
