@@ -1,32 +1,35 @@
-const Banner = require('../models/Banner');
+const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
+
+function formatBanner(b) {
+  if (!b) return null;
+  return {
+    _id: b.id,
+    id: b.id,
+    title: b.title,
+    subtitle: b.subtitle,
+    location: b.location || 'hero',
+    imageUrl: b.image_url,
+    image: { url: b.image_url },
+    mobileImageUrl: b.mobile_image_url,
+    link: b.link,
+    ctaText: b.cta_text,
+    sortOrder: b.sort_order || 0,
+    isActive: b.is_active,
+    createdAt: b.created_at,
+  };
+}
 
 // GET /api/banners?location=hero  [public]
 exports.getActiveBanners = async (req, res, next) => {
   try {
     const { location } = req.query;
-    const now = new Date();
-    const filter = {
-      isActive: true,
-      $or: [
-        { scheduledFrom: { $exists: false } },
-        { scheduledFrom: null },
-        { scheduledFrom: { $lte: now } },
-      ],
-      $and: [
-        {
-          $or: [
-            { scheduledTo: { $exists: false } },
-            { scheduledTo: null },
-            { scheduledTo: { $gte: now } },
-          ],
-        },
-      ],
-    };
-    if (location) filter.location = location;
+    let query = supabase.from('banners').select('*').eq('is_active', true);
+    if (location) query = query.eq('location', location);
 
-    const banners = await Banner.find(filter).sort({ sortOrder: 1 }).lean();
-    res.json({ success: true, banners });
+    const { data, error } = await query.order('sort_order', { ascending: true });
+    if (error) throw error;
+    res.json({ success: true, banners: (data || []).map(formatBanner) });
   } catch (err) {
     next(err);
   }
@@ -35,8 +38,9 @@ exports.getActiveBanners = async (req, res, next) => {
 // GET /api/banners/admin  [adminAuth]
 exports.getAllBannersAdmin = async (req, res, next) => {
   try {
-    const banners = await Banner.find().sort({ createdAt: -1 }).lean();
-    res.json({ success: true, banners });
+    const { data, error } = await supabase.from('banners').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, banners: (data || []).map(formatBanner) });
   } catch (err) {
     next(err);
   }
@@ -45,8 +49,21 @@ exports.getAllBannersAdmin = async (req, res, next) => {
 // POST /api/banners  [adminAuth]
 exports.createBanner = async (req, res, next) => {
   try {
-    const banner = await Banner.create(req.body);
-    res.status(201).json({ success: true, message: 'Banner created.', banner });
+    const payload = {
+      title: req.body.title,
+      subtitle: req.body.subtitle,
+      location: req.body.location || 'hero',
+      image_url: req.body.imageUrl || req.body.image?.url,
+      mobile_image_url: req.body.mobileImageUrl,
+      link: req.body.link,
+      cta_text: req.body.ctaText,
+      sort_order: req.body.sortOrder || 0,
+      is_active: req.body.isActive !== false,
+    };
+
+    const { data, error } = await supabase.from('banners').insert(payload).select().single();
+    if (error) throw error;
+    res.status(201).json({ success: true, message: 'Banner created.', banner: formatBanner(data) });
   } catch (err) {
     next(err);
   }
@@ -55,9 +72,20 @@ exports.createBanner = async (req, res, next) => {
 // PUT /api/banners/:id  [adminAuth]
 exports.updateBanner = async (req, res, next) => {
   try {
-    const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!banner) return next(createError('Banner not found.', 404));
-    res.json({ success: true, message: 'Banner updated.', banner });
+    const updates = {};
+    if (req.body.title !== undefined) updates.title = req.body.title;
+    if (req.body.subtitle !== undefined) updates.subtitle = req.body.subtitle;
+    if (req.body.location !== undefined) updates.location = req.body.location;
+    if (req.body.imageUrl !== undefined || req.body.image?.url) updates.image_url = req.body.imageUrl || req.body.image?.url;
+    if (req.body.mobileImageUrl !== undefined) updates.mobile_image_url = req.body.mobileImageUrl;
+    if (req.body.link !== undefined) updates.link = req.body.link;
+    if (req.body.ctaText !== undefined) updates.cta_text = req.body.ctaText;
+    if (req.body.sortOrder !== undefined) updates.sort_order = req.body.sortOrder;
+    if (req.body.isActive !== undefined) updates.is_active = req.body.isActive;
+
+    const { data, error } = await supabase.from('banners').update(updates).eq('id', req.params.id).select().single();
+    if (error || !data) return next(createError('Banner not found.', 404));
+    res.json({ success: true, message: 'Banner updated.', banner: formatBanner(data) });
   } catch (err) {
     next(err);
   }
@@ -66,8 +94,8 @@ exports.updateBanner = async (req, res, next) => {
 // DELETE /api/banners/:id  [adminAuth]
 exports.deleteBanner = async (req, res, next) => {
   try {
-    const banner = await Banner.findByIdAndDelete(req.params.id);
-    if (!banner) return next(createError('Banner not found.', 404));
+    const { error } = await supabase.from('banners').delete().eq('id', req.params.id);
+    if (error) throw error;
     res.json({ success: true, message: 'Banner deleted.' });
   } catch (err) {
     next(err);

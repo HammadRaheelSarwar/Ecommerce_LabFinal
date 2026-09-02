@@ -1,12 +1,5 @@
 const jwt = require('jsonwebtoken');
-const AdminUser = require('../models/AdminUser');
 const supabase = require('../config/supabase');
-
-const mongoose = require('mongoose');
-
-const isSupabaseConfigured = () => {
-  return !!supabase;
-};
 
 const adminAuth = async (req, res, next) => {
   try {
@@ -16,46 +9,38 @@ const adminAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'all_available_admin_jwt_super_secret_key_2026');
+    const decoded = jwt.verify(
+      token,
+      process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET || 'all_available_admin_jwt_super_secret_key_2026'
+    );
 
-    // 1. Try Supabase if configured
-    if (isSupabaseConfigured()) {
-      const { data: admin, error } = await supabase
-        .from('admin_users')
-        .select('id, name, email, role, is_active')
-        .eq('id', decoded.id)
-        .maybeSingle();
-
-      if (admin) {
-        if (!admin.is_active) {
-          return res.status(401).json({ success: false, message: 'Admin account is deactivated.' });
-        }
-        req.admin = {
-          _id: admin.id,
-          id: admin.id,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role,
-          isActive: admin.is_active,
-        };
-        return next();
-      }
+    if (!supabase) {
+      return res.status(500).json({ success: false, message: 'Database client not initialized.' });
     }
 
-    // 2. Fall back to MongoDB if connected
-    if (mongoose.connection.readyState !== 1) {
+    const { data: admin, error } = await supabase
+      .from('admin_users')
+      .select('id, name, email, role, is_active')
+      .eq('id', decoded.id)
+      .maybeSingle();
+
+    if (error || !admin) {
       return res.status(401).json({ success: false, message: 'Admin not found.' });
     }
 
-    const admin = await AdminUser.findById(decoded.id).select('-passwordHash');
-    if (!admin) {
-      return res.status(401).json({ success: false, message: 'Admin not found.' });
-    }
-    if (!admin.isActive) {
+    if (!admin.is_active) {
       return res.status(401).json({ success: false, message: 'Admin account is deactivated.' });
     }
 
-    req.admin = admin;
+    req.admin = {
+      _id: admin.id,
+      id: admin.id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      isActive: admin.is_active,
+    };
+
     next();
   } catch (err) {
     if (err.name === 'JsonWebTokenError') {

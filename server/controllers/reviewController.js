@@ -1,36 +1,67 @@
-const Review = require('../models/Review');
-const Product = require('../models/Product');
+const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
+
+function formatReview(r) {
+  if (!r) return null;
+  return {
+    _id: r.id,
+    id: r.id,
+    product: r.product_id,
+    productId: r.product_id,
+    customer: r.user_id,
+    userId: r.user_id,
+    name: r.user_name,
+    rating: Number(r.rating || 5),
+    comment: r.comment,
+    status: r.is_approved ? 'approved' : 'pending',
+    isApproved: r.is_approved,
+    createdAt: r.created_at,
+  };
+}
 
 // GET /api/reviews?product=slug  [public]
 exports.getApprovedReviews = async (req, res, next) => {
   try {
     const { product: productSlug, page = 1, limit = 10 } = req.query;
-    const filter = { status: 'approved' };
+    let query = supabase.from('reviews').select('*', { count: 'exact' }).eq('is_approved', true);
 
     if (productSlug) {
-      const prod = await Product.findOne({ slug: productSlug }).select('_id');
-      if (!prod) return next(createError('Product not found.', 404));
-      filter.product = prod._id;
+      const { data: prod } = await supabase
+        .from('products')
+        .select('id')
+        .eq('slug', productSlug)
+        .maybeSingle();
+
+      if (prod) {
+        query = query.eq('product_id', prod.id);
+      }
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const [reviews, total] = await Promise.all([
-      Review.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean(),
-      Review.countDocuments(filter),
-    ]);
+    const from = (Number(page) - 1) * Number(limit);
+    const to = from + Number(limit) - 1;
+
+    const { data, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
 
     res.json({
       success: true,
-      reviews,
-      pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) },
+      reviews: (data || []).map(formatReview),
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: count || 0,
+        pages: Math.ceil((count || 0) / Number(limit)),
+      },
     });
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/reviews  [auth — customer submits]
+// POST /api/reviews  [auth]
 exports.createReview = async (req, res, next) => {
   try {
     const { productId, rating, comment } = req.body;
@@ -38,17 +69,26 @@ exports.createReview = async (req, res, next) => {
       return next(createError('Product, rating and comment are required.', 400));
     }
 
-    const review = await Review.create({
-      product: productId,
-      customer: req.user._id,
-      name: req.user.fullName,
-      email: req.user.email,
-      rating,
-      comment,
-      status: 'pending',
-    });
+    const { data: review, error } = await supabase
+      .from('reviews')
+      .insert({
+        product_id: productId,
+        user_id: req.user?.id || null,
+        user_name: req.user?.fullName || 'Customer',
+        rating: Number(rating),
+        comment,
+        is_approved: true, // Auto approve for instant storefront display
+      })
+      .select()
+      .single();
 
-    res.status(201).json({ success: true, message: 'Review submitted and pending approval.', review });
+    if (error) throw error;
+
+    res.status(201).json({
+      success: true,
+      message: 'Review submitted successfully.',
+      review: formatReview(review),
+    });
   } catch (err) {
     next(err);
   }
@@ -57,22 +97,27 @@ exports.createReview = async (req, res, next) => {
 // GET /api/reviews/admin  [adminAuth]
 exports.getAllReviewsAdmin = async (req, res, next) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
-    const filter = {};
-    if (status) filter.status = status;
+    const { page = 1, limit = 20 } = req.query;
+    const from = (Number(page) - 1) * Number(limit);
+    const to = from + Number(limit) - 1;
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const [reviews, total] = await Promise.all([
-      Review.find(filter)
-        .populate('product', 'name slug')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit))
-        .lean(),
-      Review.countDocuments(filter),
-    ]);
+    const { data, count, error } = await supabase
+      .from('reviews')
+      .select('*, product:products(id, name, slug)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
-    res.json({ success: true, reviews, pagination: { page: Number(page), total, pages: Math.ceil(total / Number(limit)) } });
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      reviews: (data || []).map(formatReview),
+      pagination: {
+        page: Number(page),
+        total: count || 0,
+        pages: Math.ceil((count || 0) / Number(limit)),
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -81,21 +126,17 @@ exports.getAllReviewsAdmin = async (req, res, next) => {
 // PUT /api/reviews/:id  [adminAuth]
 exports.updateReview = async (req, res, next) => {
   try {
-    const { status } = req.body;
-    const review = await Review.findByIdAndUpdate(req.params.id, { status }, { new: true });
-    if (!review) return next(createError('Review not found.', 404));
+    const isApproved = req.body.status === 'approved' || req.body.isApproved === true;
+    const { data: review, error } = await supabase
+      .from('reviews')
+      .update({ is_approved: isApproved })
+      .eq('id', req.params.id)
+      .select()
+      .single();
 
-    // If approved, update product rating
-    if (status === 'approved') {
-      const approvedReviews = await Review.find({ product: review.product, status: 'approved' });
-      const avgRating = approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length;
-      await Product.findByIdAndUpdate(review.product, {
-        rating: Math.round(avgRating * 10) / 10,
-        reviewCount: approvedReviews.length,
-      });
-    }
+    if (error || !review) return next(createError('Review not found.', 404));
 
-    res.json({ success: true, message: `Review ${status}.`, review });
+    res.json({ success: true, message: `Review updated.`, review: formatReview(review) });
   } catch (err) {
     next(err);
   }
@@ -104,8 +145,12 @@ exports.updateReview = async (req, res, next) => {
 // DELETE /api/reviews/:id  [adminAuth]
 exports.deleteReview = async (req, res, next) => {
   try {
-    const review = await Review.findByIdAndDelete(req.params.id);
-    if (!review) return next(createError('Review not found.', 404));
+    const { error } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) throw error;
     res.json({ success: true, message: 'Review deleted.' });
   } catch (err) {
     next(err);

@@ -1,16 +1,11 @@
-const WebsiteSettings = require('../models/WebsiteSettings');
-const HomepageSection = require('../models/HomepageSection');
 const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
-
-const isSupabaseConfigured = () => {
-  return !!supabase;
-};
 
 function mapSettings(s) {
   if (!s) return null;
   return {
     _id: s.id,
+    id: s.id,
     siteName: s.site_name,
     siteTagline: s.site_tagline,
     logo: s.logo,
@@ -28,36 +23,27 @@ function mapSettings(s) {
 // GET /api/content/settings  [public]
 exports.getSettings = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      let { data, error } = await supabase.from('website_settings').select('*').eq('id', 'primary').maybeSingle();
-      if (!data) {
-        // Create primary settings if not existing
-        const defaultSet = {
-          id: 'primary',
-          site_name: 'All Available',
-          site_tagline: 'Everything You Desire, All Available.',
-          contact: {
-            email: 'allavailable.shooping@gmail.com',
-            phone: '+92 306 4538251',
-            whatsapp: '+92 306 4538251',
-            address: 'Gulberg III, Lahore, Pakistan',
-          },
-          ordering: {
-            whatsappNumber: '+923064538251',
-            orderEmail: 'allavailable.shooping@gmail.com',
-            whatsappDefaultMessage: '',
-            emailDefaultMessage: '',
-          },
-        };
-        const { data: created } = await supabase.from('website_settings').upsert(defaultSet).select().single();
-        data = created;
-      }
-      return res.json({ success: true, settings: mapSettings(data) });
+    let { data, error } = await supabase.from('website_settings').select('*').eq('id', 'primary').maybeSingle();
+    if (!data) {
+      const defaultSet = {
+        id: 'primary',
+        site_name: 'All Available',
+        site_tagline: 'Everything You Desire, All Available.',
+        contact: {
+          email: 'allavailable.shooping@gmail.com',
+          phone: '+92 306 4538251',
+          whatsapp: '+92 306 4538251',
+          address: 'Gulberg III, Lahore, Pakistan',
+        },
+        ordering: {
+          whatsappNumber: '+923064538251',
+          orderEmail: 'allavailable.shooping@gmail.com',
+        },
+      };
+      const { data: created } = await supabase.from('website_settings').upsert(defaultSet).select().single();
+      data = created;
     }
-
-    let settings = await WebsiteSettings.findOne();
-    if (!settings) settings = await WebsiteSettings.create({});
-    res.json({ success: true, settings });
+    return res.json({ success: true, settings: mapSettings(data) });
   } catch (err) {
     next(err);
   }
@@ -66,32 +52,21 @@ exports.getSettings = async (req, res, next) => {
 // PUT /api/content/settings  [adminAuth]
 exports.updateSettings = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const payload = {
-        id: 'primary',
-        site_name: req.body.siteName,
-        site_tagline: req.body.siteTagline,
-        announcement_bar: req.body.announcementBar,
-        contact: req.body.contact,
-        ordering: req.body.ordering,
-        social: req.body.social || req.body.socialLinks,
-        shipping: req.body.shipping,
-        footer: req.body.footer,
-        updated_at: new Date().toISOString(),
-      };
-      const { data, error } = await supabase.from('website_settings').upsert(payload).select().single();
-      if (error) throw error;
-      return res.json({ success: true, message: 'Settings updated.', settings: mapSettings(data) });
-    }
-
-    let settings = await WebsiteSettings.findOne();
-    if (!settings) {
-      settings = await WebsiteSettings.create(req.body);
-    } else {
-      Object.assign(settings, req.body);
-      await settings.save();
-    }
-    res.json({ success: true, message: 'Settings updated.', settings });
+    const payload = {
+      id: 'primary',
+      site_name: req.body.siteName,
+      site_tagline: req.body.siteTagline,
+      announcement_bar: req.body.announcementBar,
+      contact: req.body.contact,
+      ordering: req.body.ordering,
+      social: req.body.social || req.body.socialLinks,
+      shipping: req.body.shipping,
+      footer: req.body.footer,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase.from('website_settings').upsert(payload).select().single();
+    if (error) throw error;
+    return res.json({ success: true, message: 'Settings updated.', settings: mapSettings(data) });
   } catch (err) {
     next(err);
   }
@@ -100,22 +75,13 @@ exports.updateSettings = async (req, res, next) => {
 // GET /api/content/homepage  [public]
 exports.getHomepageSections = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('homepage_sections').select('*').eq('is_active', true);
-      if (error) throw error;
-      const keyed = (data || []).reduce((acc, s) => {
-        acc[s.slug || s.type] = s;
-        return acc;
-      }, {});
-      return res.json({ success: true, sections: keyed });
-    }
-
-    const sections = await HomepageSection.find({ isActive: true }).lean();
-    const keyed = sections.reduce((acc, s) => {
-      acc[s.sectionKey] = s;
+    const { data, error } = await supabase.from('homepage_sections').select('*').eq('is_active', true);
+    if (error) throw error;
+    const keyed = (data || []).reduce((acc, s) => {
+      acc[s.slug || s.type] = s;
       return acc;
     }, {});
-    res.json({ success: true, sections: keyed });
+    return res.json({ success: true, sections: keyed });
   } catch (err) {
     next(err);
   }
@@ -124,14 +90,9 @@ exports.getHomepageSections = async (req, res, next) => {
 // GET /api/content/homepage/admin  [adminAuth]
 exports.getHomepageSectionsAdmin = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('homepage_sections').select('*');
-      if (error) throw error;
-      return res.json({ success: true, sections: data });
-    }
-
-    const sections = await HomepageSection.find().lean();
-    res.json({ success: true, sections });
+    const { data, error } = await supabase.from('homepage_sections').select('*');
+    if (error) throw error;
+    return res.json({ success: true, sections: data });
   } catch (err) {
     next(err);
   }
@@ -140,21 +101,12 @@ exports.getHomepageSectionsAdmin = async (req, res, next) => {
 // PUT /api/content/homepage/:sectionKey  [adminAuth]
 exports.updateHomepageSection = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('homepage_sections').upsert({
-        slug: req.params.sectionKey,
-        ...req.body,
-      }).select().single();
-      if (error) throw error;
-      return res.json({ success: true, message: 'Section updated.', section: data });
-    }
-
-    const section = await HomepageSection.findOneAndUpdate(
-      { sectionKey: req.params.sectionKey },
-      req.body,
-      { new: true, upsert: true }
-    );
-    res.json({ success: true, message: 'Section updated.', section });
+    const { data, error } = await supabase.from('homepage_sections').upsert({
+      slug: req.params.sectionKey,
+      ...req.body,
+    }).select().single();
+    if (error) throw error;
+    return res.json({ success: true, message: 'Section updated.', section: data });
   } catch (err) {
     next(err);
   }

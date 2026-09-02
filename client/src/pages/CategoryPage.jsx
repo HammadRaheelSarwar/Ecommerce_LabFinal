@@ -56,7 +56,7 @@ export default function CategoryPage() {
 
         const queryParams = {
           category: cat._id,
-          limit: 36,
+          limit: 100,
         }
         if (activeSubcategory?.name) {
           queryParams.subcategory = activeSubcategory.name
@@ -71,7 +71,7 @@ export default function CategoryPage() {
       .catch(() => {
         if (!isMounted) return
         // Try fetching by slug directly if category object failed
-        productService.getAll({ category: slug, limit: 36 })
+        productService.getAll({ category: slug, limit: 100 })
           .then(res => {
             if (isMounted) setProducts(res?.data?.products || [])
           })

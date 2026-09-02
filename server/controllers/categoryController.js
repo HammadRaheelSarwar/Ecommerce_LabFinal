@@ -1,11 +1,6 @@
-const Category = require('../models/Category');
 const slugify = require('slugify');
 const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
-
-const isSupabaseConfigured = () => {
-  return !!supabase;
-};
 
 function mapCategory(c) {
   if (!c) return null;
@@ -36,21 +31,15 @@ function mapCategory(c) {
 // GET /api/categories  (public)
 exports.getCategories = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true })
-        .order('name', { ascending: true });
-      if (error) throw error;
-      return res.json({ success: true, categories: (data || []).map(mapCategory) });
-    }
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
 
-    const categories = await Category.find({ isActive: true })
-      .sort({ sortOrder: 1, name: 1 })
-      .lean();
-    res.json({ success: true, categories });
+    if (error) throw error;
+    res.json({ success: true, categories: (data || []).map(mapCategory) });
   } catch (err) {
     next(err);
   }
@@ -59,154 +48,152 @@ exports.getCategories = async (req, res, next) => {
 // GET /api/categories/nav (for navigation — active + showInNav)
 exports.getNavCategories = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('is_active', true)
-        .eq('show_in_nav', true)
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      return res.json({ success: true, categories: (data || []).map(mapCategory) });
-    }
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .eq('show_in_nav', true)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
 
-    const categories = await Category.find({ isActive: true, showInNav: true })
-      .sort({ sortOrder: 1 })
-      .select('name slug image subcategories')
-      .lean();
-    res.json({ success: true, categories });
+    if (error) throw error;
+    res.json({ success: true, categories: (data || []).map(mapCategory) });
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/categories/:slug (public)
+// GET /api/categories/:slug
 exports.getCategoryBySlug = async (req, res, next) => {
   try {
-    const { slug } = req.params;
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
+    const cleanSlug = req.params.slug.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    let { data: cat, error } = await supabase
+      .from('categories')
+      .select('*')
+      .ilike('slug', `%${cleanSlug}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (!cat) {
+      const cleanName = req.params.slug.replace(/-/g, ' ');
+      const resName = await supabase
         .from('categories')
         .select('*')
-        .eq('slug', slug)
-        .eq('is_active', true)
+        .ilike('name', `%${cleanName}%`)
+        .limit(1)
         .maybeSingle();
-      if (error) throw error;
-      if (!data) return next(createError('Category not found.', 404));
-      return res.json({ success: true, category: mapCategory(data) });
+      cat = resName.data;
     }
 
-    const category = await Category.findOne({ slug, isActive: true });
-    if (!category) return next(createError('Category not found.', 404));
-    res.json({ success: true, category });
+    if (!cat) return next(createError('Category not found.', 404));
+    res.json({ success: true, category: mapCategory(cat) });
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/categories/admin/all [adminAuth]
+// GET /api/categories/admin/all  [adminAuth]
 exports.getAllCategoriesAdmin = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order', { ascending: true })
-        .order('name', { ascending: true });
-      if (error) throw error;
-      return res.json({ success: true, categories: (data || []).map(mapCategory) });
-    }
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
 
-    const categories = await Category.find().sort({ sortOrder: 1, name: 1 }).lean();
-    res.json({ success: true, categories });
+    if (error) throw error;
+    res.json({ success: true, categories: (data || []).map(mapCategory) });
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/categories [adminAuth]
+// POST /api/categories  [adminAuth]
 exports.createCategory = async (req, res, next) => {
   try {
-    const { name, subcategories = [] } = req.body;
+    const { name, description, image, banner, subcategories = [], isActive, showInNav, sortOrder } = req.body;
     if (!name) return next(createError('Category name is required.', 400));
 
-    const slug = slugify(name, { lower: true, strict: true });
+    const generatedSlug = slugify(name, { lower: true, strict: true });
+    const payload = {
+      name: name.trim(),
+      slug: generatedSlug,
+      description: description?.trim(),
+      image_url: image?.url || req.body.imageUrl || null,
+      banner_url: banner?.url || req.body.bannerUrl || null,
+      subcategories: subcategories.map(s => ({
+        name: s.name,
+        slug: s.slug || slugify(s.name, { lower: true, strict: true }),
+        img: s.img || s.image?.url || '',
+      })),
+      is_active: isActive !== false,
+      show_in_nav: showInNav !== false,
+      sort_order: Number(sortOrder || 0),
+    };
 
-    const processedSubs = subcategories.map((sub) => ({
-      name: sub.name,
-      slug: sub.slug ? slugify(sub.slug, { lower: true, strict: true }) : slugify(sub.name, { lower: true, strict: true }),
-      image: sub.image || { url: sub.img || '' },
-      isActive: true,
-    }));
+    const { data, error } = await supabase
+      .from('categories')
+      .insert(payload)
+      .select()
+      .single();
 
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('categories').insert({
-        name,
-        slug,
-        description: req.body.description,
-        image_url: req.body.image?.url,
-        banner_url: req.body.banner?.url,
-        subcategories: processedSubs,
-        is_active: req.body.isActive !== false,
-        show_in_nav: req.body.showInNav !== false,
-        sort_order: req.body.sortOrder || 0,
-      }).select().single();
-      if (error) throw error;
-      return res.status(201).json({ success: true, message: 'Category created.', category: mapCategory(data) });
-    }
-
-    const category = await Category.create({
-      ...req.body,
-      slug,
-      subcategories: processedSubs,
-    });
-    res.status(201).json({ success: true, message: 'Category created.', category });
+    if (error) throw error;
+    res.status(201).json({ success: true, message: 'Category created successfully.', category: mapCategory(data) });
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/categories/:id [adminAuth]
+// PUT /api/categories/:id  [adminAuth]
 exports.updateCategory = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('categories').update({
-        name: req.body.name,
-        description: req.body.description,
-        image_url: req.body.image?.url,
-        banner_url: req.body.banner?.url,
-        subcategories: req.body.subcategories,
-        is_active: req.body.isActive,
-        show_in_nav: req.body.showInNav,
-        sort_order: req.body.sortOrder,
-        updated_at: new Date().toISOString(),
-      }).eq('id', id).select().single();
-      if (error) throw error;
-      return res.json({ success: true, message: 'Category updated.', category: mapCategory(data) });
-    }
+    const { name, description, image, banner, subcategories, isActive, showInNav, sortOrder } = req.body;
+    const updates = {
+      updated_at: new Date().toISOString(),
+    };
 
-    const category = await Category.findByIdAndUpdate(id, req.body, { new: true });
-    if (!category) return next(createError('Category not found.', 404));
-    res.json({ success: true, message: 'Category updated.', category });
+    if (name) {
+      updates.name = name.trim();
+      updates.slug = slugify(name, { lower: true, strict: true });
+    }
+    if (description !== undefined) updates.description = description ? description.trim() : null;
+    if (image?.url || req.body.imageUrl) updates.image_url = image?.url || req.body.imageUrl;
+    if (banner?.url || req.body.bannerUrl) updates.banner_url = banner?.url || req.body.bannerUrl;
+    if (subcategories !== undefined) {
+      updates.subcategories = subcategories.map(s => ({
+        name: s.name,
+        slug: s.slug || slugify(s.name, { lower: true, strict: true }),
+        img: s.img || s.image?.url || '',
+      }));
+    }
+    if (isActive !== undefined) updates.is_active = isActive;
+    if (showInNav !== undefined) updates.show_in_nav = showInNav;
+    if (sortOrder !== undefined) updates.sort_order = Number(sortOrder);
+
+    const { data, error } = await supabase
+      .from('categories')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error || !data) return next(createError('Category not found.', 404));
+    res.json({ success: true, message: 'Category updated successfully.', category: mapCategory(data) });
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE /api/categories/:id [adminAuth]
+// DELETE /api/categories/:id  [adminAuth]
 exports.deleteCategory = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (isSupabaseConfigured()) {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (error) throw error;
-      return res.json({ success: true, message: 'Category deleted.' });
-    }
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', req.params.id);
 
-    const category = await Category.findByIdAndDelete(id);
-    if (!category) return next(createError('Category not found.', 404));
-    res.json({ success: true, message: 'Category deleted.' });
+    if (error) throw error;
+    res.json({ success: true, message: 'Category deleted successfully.' });
   } catch (err) {
     next(err);
   }

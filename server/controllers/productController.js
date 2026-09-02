@@ -1,12 +1,6 @@
-const Product = require('../models/Product');
-const Category = require('../models/Category');
 const slugify = require('slugify');
 const supabase = require('../config/supabase');
 const { createError } = require('../middleware/errorHandler');
-
-const isSupabaseConfigured = () => {
-  return !!supabase;
-};
 
 function mapSupabaseProduct(p) {
   if (!p) return null;
@@ -18,11 +12,11 @@ function mapSupabaseProduct(p) {
     sku: p.sku,
     description: p.description,
     shortDescription: p.short_description,
-    category: p.category,
+    category: p.category || (p.category_id ? { _id: p.category_id, id: p.category_id } : null),
     categoryId: p.category_id,
     subcategory: p.subcategory,
-    brand: p.brand,
-    gender: p.gender,
+    brand: p.brand || 'All Available',
+    gender: p.gender || 'women',
     material: p.material,
     tags: p.tags || [],
     basePrice: Number(p.base_price || 0),
@@ -38,7 +32,7 @@ function mapSupabaseProduct(p) {
     isActive: p.is_active,
     allowWhatsApp: p.allow_whatsapp !== false,
     allowEmail: p.allow_email !== false,
-    rating: Number(p.rating || 5),
+    rating: Number(p.rating || 4.8),
     reviewCount: p.review_count || 0,
     soldCount: p.sold_count || 0,
     createdAt: p.created_at,
@@ -49,103 +43,76 @@ function mapSupabaseProduct(p) {
 // GET /api/products
 exports.getProducts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, sort = 'featured', ...queryParams } = req.query;
+    const { page = 1, limit = 50, sort = 'featured', ...queryParams } = req.query;
 
-    if (isSupabaseConfigured()) {
-      let query = supabase.from('products').select('*, category:categories(id, name, slug)', { count: 'exact' });
+    let query = supabase.from('products').select('*, category:categories(id, name, slug)', { count: 'exact' });
+    query = query.eq('is_active', true);
 
-      query = query.eq('is_active', true);
+    if (queryParams.category) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(queryParams.category);
+      if (isUuid) {
+        query = query.eq('category_id', queryParams.category);
+      } else {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('id')
+          .ilike('slug', `%${queryParams.category}%`)
+          .limit(1)
+          .maybeSingle();
 
-      if (queryParams.category) {
-        // Can be category id or slug
-        if (queryParams.category.match(/^[0-9a-fA-F-]{36}$/)) {
-          query = query.eq('category_id', queryParams.category);
-        } else {
-          const { data: cat } = await supabase.from('categories').select('id').eq('slug', queryParams.category).maybeSingle();
-          if (cat) query = query.eq('category_id', cat.id);
+        if (cat?.id) {
+          query = query.eq('category_id', cat.id);
         }
       }
-
-      if (queryParams.subcategory) {
-        query = query.eq('subcategory', queryParams.subcategory);
-      }
-      if (queryParams.gender) query = query.eq('gender', queryParams.gender);
-      if (queryParams.brand) query = query.eq('brand', queryParams.brand);
-      if (queryParams.isNewArrival === 'true') query = query.eq('is_new_arrival', true);
-      if (queryParams.isBestSeller === 'true') query = query.eq('is_best_seller', true);
-      if (queryParams.isFeatured === 'true') query = query.eq('is_featured', true);
-      if (queryParams.isOnSale === 'true') query = query.eq('is_on_sale', true);
-      if (queryParams.minPrice) query = query.gte('base_price', Number(queryParams.minPrice));
-      if (queryParams.maxPrice) query = query.lte('base_price', Number(queryParams.maxPrice));
-      if (queryParams.search) {
-        query = query.ilike('name', `%${queryParams.search}%`);
-      }
-
-      // Sort
-      switch (sort) {
-        case 'newest': query = query.order('created_at', { ascending: false }); break;
-        case 'price_asc': query = query.order('base_price', { ascending: true }); break;
-        case 'price_desc': query = query.order('base_price', { ascending: false }); break;
-        case 'popular': query = query.order('sold_count', { ascending: false }); break;
-        case 'rating': query = query.order('rating', { ascending: false }); break;
-        default: query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false }); break;
-      }
-
-      const from = (Number(page) - 1) * Number(limit);
-      const to = from + Number(limit) - 1;
-      const { data, count, error } = await query.range(from, to);
-
-      if (error) throw error;
-
-      return res.json({
-        success: true,
-        products: (data || []).map(mapSupabaseProduct),
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total: count || 0,
-          pages: Math.ceil((count || 0) / Number(limit)),
-        },
-      });
     }
 
-    // Mongoose fallback
-    const filter = { isActive: true };
-    if (queryParams.category) filter.category = queryParams.category;
-    if (queryParams.subcategory) filter.subcategory = queryParams.subcategory;
-    if (queryParams.gender) filter.gender = queryParams.gender;
-    if (queryParams.brand) filter.brand = queryParams.brand;
-    if (queryParams.isNewArrival === 'true') filter.isNewArrival = true;
-    if (queryParams.isBestSeller === 'true') filter.isBestSeller = true;
-    if (queryParams.isFeatured === 'true') filter.isFeatured = true;
-    if (queryParams.isOnSale === 'true') filter.isOnSale = true;
-    if (queryParams.minPrice || queryParams.maxPrice) {
-      filter.basePrice = {};
-      if (queryParams.minPrice) filter.basePrice.$gte = Number(queryParams.minPrice);
-      if (queryParams.maxPrice) filter.basePrice.$lte = Number(queryParams.maxPrice);
+    if (queryParams.subcategory) {
+      query = query.ilike('subcategory', `%${queryParams.subcategory}%`);
     }
-    if (queryParams.search) filter.$text = { $search: queryParams.search };
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const [products, total] = await Promise.all([
-      Product.find(filter)
-        .populate('category', 'name slug')
-        .sort({ isFeatured: -1, createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit))
-        .lean(),
-      Product.countDocuments(filter),
-    ]);
+    if (queryParams.featured === 'true' || queryParams.featured === true) {
+      query = query.eq('is_featured', true);
+    }
+    if (queryParams.newArrival === 'true' || queryParams.newArrival === true) {
+      query = query.eq('is_new_arrival', true);
+    }
+    if (queryParams.bestSeller === 'true' || queryParams.bestSeller === true) {
+      query = query.eq('is_best_seller', true);
+    }
+    if (queryParams.search) {
+      query = query.or(`name.ilike.%${queryParams.search}%,sku.ilike.%${queryParams.search}%`);
+    }
 
-    res.json({
+    // Sorting
+    switch (sort) {
+      case 'price_asc':
+        query = query.order('sale_price', { ascending: true, nullsFirst: false });
+        break;
+      case 'price_desc':
+        query = query.order('sale_price', { ascending: false });
+        break;
+      case 'newest':
+        query = query.order('created_at', { ascending: false });
+        break;
+      case 'bestselling':
+        query = query.order('sold_count', { ascending: false });
+        break;
+      default:
+        query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
+    }
+
+    const from = (Number(page) - 1) * Number(limit);
+    const to = from + Number(limit) - 1;
+
+    const { data: products, count, error } = await query.range(from, to);
+    if (error) throw error;
+
+    return res.json({
       success: true,
-      products,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        pages: Math.ceil(total / Number(limit)),
-      },
+      products: (products || []).map(mapSupabaseProduct),
+      total: count || 0,
+      pages: Math.ceil((count || 0) / Number(limit)),
+      currentPage: Number(page),
     });
   } catch (err) {
     next(err);
@@ -156,244 +123,260 @@ exports.getProducts = async (req, res, next) => {
 exports.getProductBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*, category:categories(id, name, slug)')
+      .eq('slug', slug)
+      .maybeSingle();
 
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(id, name, slug)')
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return next(createError('Product not found.', 404));
-
-      return res.json({ success: true, product: mapSupabaseProduct(data) });
-    }
-
-    const product = await Product.findOne({ slug, isActive: true })
-      .populate('category', 'name slug');
-    if (!product) return next(createError('Product not found.', 404));
-    res.json({ success: true, product });
+    if (error || !product) return next(createError('Product not found.', 404));
+    return res.json({ success: true, product: mapSupabaseProduct(product) });
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/products/slug/:slug/similar
-exports.getSimilarProducts = async (req, res, next) => {
-  try {
-    const { slugOrId } = req.params;
-    const limit = Math.min(Number(req.query.limit) || 12, 30);
-
-    if (isSupabaseConfigured()) {
-      // Find reference product
-      let targetQuery = supabase.from('products').select('*');
-      if (slugOrId.match(/^[0-9a-fA-F-]{36}$/)) {
-        targetQuery = targetQuery.eq('id', slugOrId);
-      } else {
-        targetQuery = targetQuery.eq('slug', slugOrId);
-      }
-      const { data: target } = await targetQuery.maybeSingle();
-
-      if (!target) return next(createError('Product not found.', 404));
-
-      let query = supabase
-        .from('products')
-        .select('*, category:categories(id, name, slug)')
-        .neq('id', target.id)
-        .eq('is_active', true)
-        .limit(limit);
-
-      if (target.category_id) {
-        query = query.eq('category_id', target.category_id);
-      }
-
-      const { data: similar, error } = await query;
-      if (error) throw error;
-
-      return res.json({ success: true, products: (similar || []).map(mapSupabaseProduct) });
-    }
-
-    // Mongoose fallback
-    let target = await Product.findOne({ $or: [{ slug: slugOrId }, { _id: slugOrId.match(/^[0-9a-fA-F]{24}$/) ? slugOrId : null }] }).lean();
-    if (!target) return next(createError('Product not found.', 404));
-
-    const similar = await Product.find({ _id: { $ne: target._id }, isActive: true, category: target.category })
-      .populate('category', 'name slug')
-      .limit(limit)
-      .lean();
-
-    res.json({ success: true, products: similar });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// GET /api/products/id/:id  (admin use)
+// GET /api/products/id/:id
 exports.getProductById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(id, name, slug)')
-        .eq('id', id)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) return next(createError('Product not found.', 404));
-      return res.json({ success: true, product: mapSupabaseProduct(data) });
-    }
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*, category:categories(id, name, slug)')
+      .eq('id', id)
+      .maybeSingle();
 
-    const product = await Product.findById(id).populate('category', 'name slug');
-    if (!product) return next(createError('Product not found.', 404));
-    res.json({ success: true, product });
+    if (error || !product) return next(createError('Product not found.', 404));
+    return res.json({ success: true, product: mapSupabaseProduct(product) });
   } catch (err) {
     next(err);
   }
 };
 
-// Admin: getAllProductsAdmin, createProduct, updateProduct, deleteProduct, duplicateProduct
-exports.getAllProductsAdmin = async (req, res, next) => {
+// GET /api/products/similar/:slug
+exports.getSimilarProducts = async (req, res, next) => {
   try {
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(id, name, slug)')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return res.json({ success: true, products: (data || []).map(mapSupabaseProduct) });
+    const { slug } = req.params;
+    const limit = Number(req.query.limit || 8);
+
+    const { data: current } = await supabase
+      .from('products')
+      .select('category_id, subcategory')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    let query = supabase.from('products').select('*').eq('is_active', true).neq('slug', slug).limit(limit);
+
+    if (current?.subcategory) {
+      query = query.eq('subcategory', current.subcategory);
+    } else if (current?.category_id) {
+      query = query.eq('category_id', current.category_id);
     }
-    const products = await Product.find().populate('category', 'name slug').sort({ createdAt: -1 }).lean();
-    res.json({ success: true, products });
+
+    const { data: similar, error } = await query;
+    if (error) throw error;
+
+    return res.json({ success: true, products: (similar || []).map(mapSupabaseProduct) });
   } catch (err) {
     next(err);
   }
 };
 
+// GET /api/products/featured
+exports.getFeaturedProducts = async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit || 8);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_featured', true)
+      .limit(limit);
+
+    if (error) throw error;
+    return res.json({ success: true, products: (data || []).map(mapSupabaseProduct) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/products/best-sellers
+exports.getBestSellers = async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit || 8);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_best_seller', true)
+      .limit(limit);
+
+    if (error) throw error;
+    return res.json({ success: true, products: (data || []).map(mapSupabaseProduct) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/products/new-arrivals
+exports.getNewArrivals = async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit || 8);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_new_arrival', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return res.json({ success: true, products: (data || []).map(mapSupabaseProduct) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/products  [adminAuth]
 exports.createProduct = async (req, res, next) => {
   try {
-    const { name, basePrice, category } = req.body;
-    if (!name) return next(createError('Product name is required.', 400));
+    const { name, sku, basePrice, salePrice, category, subcategory, variants, images, isFeatured, isNewArrival, isBestSeller, isOnSale, isActive } = req.body;
+    if (!name || !basePrice) return next(createError('Product name and base price are required.', 400));
 
-    let slug = slugify(name, { lower: true, strict: true });
+    const generatedSlug = slugify(`${name}-${sku || Date.now()}`, { lower: true, strict: true });
+    const payload = {
+      name: name.trim(),
+      slug: generatedSlug,
+      sku: sku?.trim(),
+      category_id: category || null,
+      subcategory: subcategory?.trim(),
+      base_price: Number(basePrice),
+      sale_price: salePrice ? Number(salePrice) : null,
+      variants: variants || [],
+      images: images || [],
+      is_featured: !!isFeatured,
+      is_new_arrival: !!isNewArrival,
+      is_best_seller: !!isBestSeller,
+      is_on_sale: !!isOnSale,
+      is_active: isActive !== false,
+    };
 
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('products').insert({
-        name,
-        slug: `${slug}-${Date.now().toString().slice(-4)}`,
-        sku: req.body.sku,
-        description: req.body.description,
-        short_description: req.body.shortDescription,
-        category_id: category,
-        subcategory: req.body.subcategory,
-        brand: req.body.brand || 'All Available',
-        gender: req.body.gender || 'unisex',
-        base_price: Number(basePrice || 0),
-        sale_price: req.body.salePrice ? Number(req.body.salePrice) : null,
-        discount_percentage: req.body.discountPercentage || 0,
-        variants: req.body.variants || [],
-        images: req.body.images || [],
-        is_featured: !!req.body.isFeatured,
-        is_new_arrival: !!req.body.isNewArrival,
-        is_best_seller: !!req.body.isBestSeller,
-        is_active: req.body.isActive !== false,
-        allow_whatsapp: req.body.allowWhatsApp !== false,
-        allow_email: req.body.allowEmail !== false,
-      }).select().single();
-
-      if (error) throw error;
-      return res.status(201).json({ success: true, message: 'Product created.', product: mapSupabaseProduct(data) });
-    }
-
-    const product = await Product.create({ ...req.body, slug });
-    res.status(201).json({ success: true, message: 'Product created.', product });
+    const { data, error } = await supabase.from('products').insert(payload).select().single();
+    if (error) throw error;
+    return res.status(201).json({ success: true, message: 'Product created successfully.', product: mapSupabaseProduct(data) });
   } catch (err) {
     next(err);
   }
 };
 
+// PUT /api/products/:id  [adminAuth]
 exports.updateProduct = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (isSupabaseConfigured()) {
-      const { data, error } = await supabase.from('products').update({
-        name: req.body.name,
-        sku: req.body.sku,
-        description: req.body.description,
-        short_description: req.body.shortDescription,
-        category_id: req.body.category,
-        subcategory: req.body.subcategory,
-        brand: req.body.brand,
-        gender: req.body.gender,
-        base_price: req.body.basePrice ? Number(req.body.basePrice) : undefined,
-        sale_price: req.body.salePrice ? Number(req.body.salePrice) : null,
-        discount_percentage: req.body.discountPercentage,
-        variants: req.body.variants,
-        images: req.body.images,
-        is_featured: req.body.isFeatured,
-        is_new_arrival: req.body.isNewArrival,
-        is_best_seller: req.body.isBestSeller,
-        is_active: req.body.isActive,
-        allow_whatsapp: req.body.allowWhatsApp,
-        allow_email: req.body.allowEmail,
-        updated_at: new Date().toISOString(),
-      }).eq('id', id).select().single();
+    const updates = {
+      updated_at: new Date().toISOString(),
+    };
+    const fields = [
+      ['name', 'name'],
+      ['sku', 'sku'],
+      ['description', 'description'],
+      ['shortDescription', 'short_description'],
+      ['category', 'category_id'],
+      ['subcategory', 'subcategory'],
+      ['basePrice', 'base_price'],
+      ['salePrice', 'sale_price'],
+      ['variants', 'variants'],
+      ['images', 'images'],
+      ['isFeatured', 'is_featured'],
+      ['isNewArrival', 'is_new_arrival'],
+      ['isBestSeller', 'is_best_seller'],
+      ['isOnSale', 'is_on_sale'],
+      ['isActive', 'is_active'],
+    ];
 
-      if (error) throw error;
-      return res.json({ success: true, message: 'Product updated.', product: mapSupabaseProduct(data) });
-    }
+    fields.forEach(([bodyField, dbField]) => {
+      if (req.body[bodyField] !== undefined) updates[dbField] = req.body[bodyField];
+    });
 
-    const product = await Product.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
-    if (!product) return next(createError('Product not found.', 404));
-    res.json({ success: true, message: 'Product updated.', product });
+    const { data, error } = await supabase.from('products').update(updates).eq('id', req.params.id).select().single();
+    if (error || !data) return next(createError('Product not found.', 404));
+    return res.json({ success: true, message: 'Product updated successfully.', product: mapSupabaseProduct(data) });
   } catch (err) {
     next(err);
   }
 };
 
-exports.deleteProduct = async (req, res, next) => {
+// GET /api/products/admin/all  [adminAuth]
+exports.getAllProductsAdmin = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (isSupabaseConfigured()) {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) throw error;
-      return res.json({ success: true, message: 'Product deleted.' });
+    const { page = 1, limit = 50, search, category } = req.query;
+    let query = supabase.from('products').select('*, category:categories(id, name, slug)', { count: 'exact' });
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
+    }
+    if (category) {
+      query = query.eq('category_id', category);
     }
 
-    const product = await Product.findByIdAndDelete(id);
-    if (!product) return next(createError('Product not found.', 404));
-    res.json({ success: true, message: 'Product deleted.' });
+    const from = (Number(page) - 1) * Number(limit);
+    const to = from + Number(limit) - 1;
+
+    const { data: products, count, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      products: (products || []).map(mapSupabaseProduct),
+      total: count || 0,
+      pages: Math.ceil((count || 0) / Number(limit)),
+      currentPage: Number(page),
+    });
   } catch (err) {
     next(err);
   }
 };
 
+// POST /api/products/:id/duplicate  [adminAuth]
 exports.duplicateProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (isSupabaseConfigured()) {
-      const { data: original, error } = await supabase.from('products').select('*').eq('id', id).single();
-      if (error || !original) return next(createError('Product not found.', 404));
+    const { data: orig, error: fetchErr } = await supabase.from('products').select('*').eq('id', id).single();
+    if (fetchErr || !orig) return next(createError('Product not found.', 404));
 
-      delete original.id;
-      original.name = `${original.name} (Copy)`;
-      original.slug = `${original.slug}-copy-${Date.now().toString().slice(-4)}`;
-      original.created_at = new Date().toISOString();
+    const newSlug = slugify(`${orig.name}-copy-${Date.now()}`, { lower: true, strict: true });
+    const payload = {
+      ...orig,
+      id: undefined,
+      name: `${orig.name} (Copy)`,
+      slug: newSlug,
+      sku: orig.sku ? `${orig.sku}-COPY` : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    delete payload.id;
 
-      const { data: copy, error: copyErr } = await supabase.from('products').insert(original).select().single();
-      if (copyErr) throw copyErr;
+    const { data: newProd, error: insertErr } = await supabase.from('products').insert(payload).select().single();
+    if (insertErr) throw insertErr;
 
-      return res.status(201).json({ success: true, message: 'Product duplicated.', product: mapSupabaseProduct(copy) });
-    }
+    return res.status(201).json({
+      success: true,
+      message: 'Product duplicated successfully.',
+      product: mapSupabaseProduct(newProd),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
-    const original = await Product.findById(id).lean();
-    if (!original) return next(createError('Product not found.', 404));
-    delete original._id;
-    original.name = `${original.name} (Copy)`;
-    original.slug = `${original.slug}-copy-${Date.now().toString().slice(-4)}`;
-    const copy = await Product.create(original);
-    res.status(201).json({ success: true, message: 'Product duplicated.', product: copy });
+// DELETE /api/products/:id  [adminAuth]
+exports.deleteProduct = async (req, res, next) => {
+  try {
+    const { error } = await supabase.from('products').delete().eq('id', req.params.id);
+    if (error) throw error;
+    return res.json({ success: true, message: 'Product deleted successfully.' });
   } catch (err) {
     next(err);
   }

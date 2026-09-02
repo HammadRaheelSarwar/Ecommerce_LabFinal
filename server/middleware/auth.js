@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const supabase = require('../config/supabase');
 
 const auth = async (req, res, next) => {
   try {
@@ -11,15 +11,36 @@ const auth = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.id).select('-passwordHash');
-    if (!user) {
+    if (!supabase) {
+      return res.status(500).json({ success: false, message: 'Database client not initialized.' });
+    }
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, full_name, email, phone, role, is_active, cart, wishlist, addresses')
+      .eq('id', decoded.id)
+      .maybeSingle();
+
+    if (error || !user) {
       return res.status(401).json({ success: false, message: 'User not found.' });
     }
-    if (!user.isActive) {
+    if (!user.is_active) {
       return res.status(401).json({ success: false, message: 'Account has been deactivated.' });
     }
 
-    req.user = user;
+    req.user = {
+      _id: user.id,
+      id: user.id,
+      fullName: user.full_name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isActive: user.is_active,
+      cart: user.cart || [],
+      wishlist: user.wishlist || [],
+      addresses: user.addresses || [],
+    };
+
     next();
   } catch (err) {
     if (err.name === 'JsonWebTokenError') {
