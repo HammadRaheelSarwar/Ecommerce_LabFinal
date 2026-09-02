@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -16,6 +16,7 @@ import { addRecentlyViewed, getRecentlyViewed } from '../utils/recentlyViewed'
 import ProductCard from '../components/ui/ProductCard'
 import BuyNowModal from '../components/product/BuyNowModal'
 import { CATEGORIES_DATA } from '../data/categoriesData'
+import { useRealtimeProducts } from '../services/realtimeService'
 
 export default function ProductPage() {
   const { slug } = useParams()
@@ -46,7 +47,12 @@ export default function ProductPage() {
 
   // Load product & associated sections
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
+    setProduct(null)
+    setSimilarProducts([])
+    setCategoryProducts([])
+    setReviews([])
     setSelectedSize('')
     setSelectedColor('')
     setQuantity(1)
@@ -55,6 +61,7 @@ export default function ProductPage() {
 
     productService.getBySlug(slug)
       .then(res => {
+        if (cancelled) return
         const p = res.data?.product
         if (!p) {
           setProduct(null)
@@ -76,7 +83,7 @@ export default function ProductPage() {
 
         // Fetch similar products via backend endpoint
         productService.getSimilar(p.slug, 12)
-          .then(simRes => setSimilarProducts(simRes.data?.products || []))
+          .then(simRes => { if (!cancelled) setSimilarProducts(simRes.data?.products || []) })
           .catch(() => {})
 
         // Fetch category siblings
@@ -84,7 +91,7 @@ export default function ProductPage() {
         if (catId) {
           productService.getAll({ category: catId, limit: 12 })
             .then(catRes => {
-              setCategoryProducts((catRes.data?.products || []).filter(item => item.slug !== p.slug))
+              if (!cancelled) setCategoryProducts((catRes.data?.products || []).filter(item => item.slug !== p.slug))
             })
             .catch(() => {})
         }
@@ -92,16 +99,35 @@ export default function ProductPage() {
         // Fetch approved reviews safely without breaking product state
         reviewService.getApproved({ product: p.slug, limit: 10 })
           .then(revRes => {
-            if (revRes?.data?.reviews) setReviews(revRes.data.reviews)
+            if (!cancelled && revRes?.data?.reviews) setReviews(revRes.data.reviews)
           })
           .catch(() => {})
       })
       .catch((err) => {
+        if (cancelled) return
         console.warn('Could not load product:', err)
         setProduct(null)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => {
+      cancelled = true
+    }
   }, [slug, navigate])
+
+  // Keep price, stock, variants, and availability current while this page is open.
+  const refreshCurrentProduct = useCallback((payload) => {
+    const changedProduct = payload?.new || payload?.old
+    if (changedProduct?.slug && changedProduct.slug !== slug) return
+
+    productService.getBySlug(slug)
+      .then(res => {
+        if (res.data?.product) setProduct(res.data.product)
+      })
+      .catch(() => {})
+  }, [slug])
+
+  useRealtimeProducts(refreshCurrentProduct)
 
   if (loading) {
     return (

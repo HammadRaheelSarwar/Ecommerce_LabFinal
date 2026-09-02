@@ -1,6 +1,13 @@
 import { useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
+let channelSequence = 0
+
+function createChannelName(table) {
+  channelSequence += 1
+  return `realtime:${table}:${channelSequence}`
+}
+
 /**
  * Hook to listen for realtime changes on the 'products' table.
  * Whenever a product is inserted, updated, or deleted, `onProductChange` is called.
@@ -10,7 +17,7 @@ export function useRealtimeProducts(onProductChange) {
     if (!onProductChange) return
 
     const channel = supabase
-      .channel('realtime:products')
+      .channel(createChannelName('products'))
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'products' },
@@ -34,7 +41,7 @@ export function useRealtimeCategories(onCategoryChange) {
     if (!onCategoryChange) return
 
     const channel = supabase
-      .channel('realtime:categories')
+      .channel(createChannelName('categories'))
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'categories' },
@@ -58,7 +65,7 @@ export function useRealtimeOrders(onOrderChange) {
     if (!onOrderChange) return
 
     const channel = supabase
-      .channel('realtime:orders')
+      .channel(createChannelName('orders'))
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },

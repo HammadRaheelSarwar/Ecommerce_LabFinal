@@ -18,6 +18,9 @@ function normalizeProduct(p) {
     reviewCount: p.review_count ?? p.reviewCount ?? 0,
     soldCount: p.sold_count ?? p.soldCount ?? 0,
     shortDescription: p.short_description || p.shortDescription || '',
+    categoryId: p.category_id || p.categoryId || p.category?._id || p.category?.id,
+    allowWhatsApp: p.allow_whatsapp ?? p.allowWhatsApp ?? true,
+    allowEmail: p.allow_email ?? p.allowEmail ?? true,
     images: Array.isArray(p.images) ? p.images : [],
     variants: Array.isArray(p.variants) ? p.variants : [],
   }
@@ -48,9 +51,10 @@ async function fetchProductsFromSupabase(params = {}) {
       query = query.ilike('subcategory', `%${params.subcategory}%`)
     }
 
-    if (params.featured) query = query.eq('is_featured', true)
-    if (params.newArrival) query = query.eq('is_new_arrival', true)
-    if (params.bestSeller) query = query.eq('is_best_seller', true)
+    if (params.featured || params.isFeatured) query = query.eq('is_featured', true)
+    if (params.newArrival || params.isNewArrival) query = query.eq('is_new_arrival', true)
+    if (params.bestSeller || params.isBestSeller) query = query.eq('is_best_seller', true)
+    if (params.isOnSale) query = query.eq('is_on_sale', true)
 
     if (params.limit) query = query.limit(Number(params.limit))
 
@@ -74,23 +78,13 @@ async function fetchProductsFromSupabase(params = {}) {
 
 async function fetchProductBySlugFromSupabase(slug) {
   try {
-    let { data, error } = await supabase
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+    const column = isUuid ? 'id' : 'slug'
+    const { data, error } = await supabase
       .from('products')
       .select('*, category:categories(id, name, slug)')
-      .eq('slug', slug)
+      .eq(column, slug)
       .maybeSingle()
-
-    if (!data) {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
-      let query = supabase.from('products').select('*, category:categories(id, name, slug)')
-      if (isUuid) {
-        query = query.eq('id', slug)
-      } else {
-        query = query.ilike('slug', `%${slug}%`)
-      }
-      const res = await query.limit(1).maybeSingle()
-      data = res?.data
-    }
 
     if (!data) throw error || new Error('Product not found')
 
@@ -132,8 +126,10 @@ export const productService = {
   },
 
   getBySlug: async (slug) => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+    const endpoint = isUuid ? 'id' : 'slug'
     try {
-      const res = await api.get(`/products/slug/${slug}`)
+      const res = await api.get(`/products/${endpoint}/${encodeURIComponent(slug)}`)
       if (res?.data?.product) return res
       return await fetchProductBySlugFromSupabase(slug)
     } catch {

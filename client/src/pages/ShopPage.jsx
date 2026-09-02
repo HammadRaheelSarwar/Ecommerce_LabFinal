@@ -67,7 +67,7 @@ export default function ShopPage() {
         limit: LIMIT,
       })
       setProducts(res.data.products || [])
-      setTotal(res.data.pagination?.total || 0)
+      setTotal(res.data.pagination?.total ?? res.data.total ?? 0)
     } catch (_) {}
     finally { setLoading(false) }
   }, [category, subcategory, sort, isNewArrival, isBestSeller, isOnSale, isFeatured, minPrice, maxPrice, gender, page])

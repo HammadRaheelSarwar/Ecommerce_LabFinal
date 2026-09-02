@@ -70,14 +70,17 @@ exports.getProducts = async (req, res, next) => {
       query = query.ilike('subcategory', `%${queryParams.subcategory}%`);
     }
 
-    if (queryParams.featured === 'true' || queryParams.featured === true) {
+    if (queryParams.featured === 'true' || queryParams.featured === true || queryParams.isFeatured === 'true' || queryParams.isFeatured === true) {
       query = query.eq('is_featured', true);
     }
-    if (queryParams.newArrival === 'true' || queryParams.newArrival === true) {
+    if (queryParams.newArrival === 'true' || queryParams.newArrival === true || queryParams.isNewArrival === 'true' || queryParams.isNewArrival === true) {
       query = query.eq('is_new_arrival', true);
     }
-    if (queryParams.bestSeller === 'true' || queryParams.bestSeller === true) {
+    if (queryParams.bestSeller === 'true' || queryParams.bestSeller === true || queryParams.isBestSeller === 'true' || queryParams.isBestSeller === true) {
       query = query.eq('is_best_seller', true);
+    }
+    if (queryParams.isOnSale === 'true' || queryParams.isOnSale === true) {
+      query = query.eq('is_on_sale', true);
     }
     if (queryParams.search) {
       query = query.or(`name.ilike.%${queryParams.search}%,sku.ilike.%${queryParams.search}%`);

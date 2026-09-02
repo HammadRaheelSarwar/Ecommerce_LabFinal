@@ -19,8 +19,8 @@ export default function BuyNowModal({
   const imageUrl = mainImg?.url || ''
   const productCode = product.sku || `AA-${(product._id || 'PROD').slice(-6).toUpperCase()}`
   const productUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/product/${product.slug}`
-    : `/product/${product.slug}`
+    ? `${window.location.origin}/product/${encodeURIComponent(product.slug || product._id)}`
+    : `/product/${encodeURIComponent(product.slug || product._id)}`
 
   // Business contact configs
   const whatsappNumber = (
@@ -97,7 +97,7 @@ export default function BuyNowModal({
             size: selectedSize || 'Standard',
             color: selectedColor || '',
             quantity: quantity,
-            price: price,
+            price: unitPrice,
             image: imageUrl,
           }
         ]

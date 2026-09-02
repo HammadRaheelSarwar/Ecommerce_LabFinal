@@ -13,6 +13,8 @@ export default function ProductCard({ product, index = 0, showUrgency = true }) 
 
   if (!product) return null
 
+  const productIdentifier = product.slug || product._id || product.id
+
   const images = (product.images && product.images.length > 0)
     ? product.images
     : [{ url: product.image?.url || '/images/placeholder.jpg' }]
@@ -77,7 +79,11 @@ export default function ProductCard({ product, index = 0, showUrgency = true }) 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Link to={`/product/${product.slug}`} className="block flex-1 flex flex-col">
+      <Link
+        to={`/product/${encodeURIComponent(productIdentifier)}`}
+        state={{ product }}
+        className="block flex-1 flex flex-col"
+      >
         {/* Image Container with Rounded Corners & Scroll Support */}
         <div
           className="relative aspect-square sm:aspect-[4/5] bg-gray-50 rounded-xl overflow-hidden mb-3"
