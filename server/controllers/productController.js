@@ -56,12 +56,19 @@ exports.getProducts = async (req, res, next) => {
         const { data: cat } = await supabase
           .from('categories')
           .select('id')
-          .ilike('slug', `%${queryParams.category}%`)
-          .limit(1)
+          .eq('slug', queryParams.category)
           .maybeSingle();
 
         if (cat?.id) {
           query = query.eq('category_id', cat.id);
+        } else {
+          return res.json({
+            success: true,
+            products: [],
+            total: 0,
+            pages: 0,
+            currentPage: Number(page),
+          });
         }
       }
     }

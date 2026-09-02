@@ -39,10 +39,12 @@ async function fetchProductsFromSupabase(params = {}) {
         const { data: cat } = await supabase
           .from('categories')
           .select('id')
-          .ilike('slug', `%${params.category}%`)
-          .single()
+          .eq('slug', params.category)
+          .maybeSingle()
         if (cat?.id) {
           query = query.eq('category_id', cat.id)
+        } else {
+          return { data: { success: true, products: [], total: 0, pages: 0 } }
         }
       }
     }

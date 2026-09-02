@@ -7,6 +7,12 @@ import { CATEGORIES_DATA } from '../data/categoriesData'
 import { useRealtimeProducts, useRealtimeCategories } from '../services/realtimeService'
 import ProductCard from '../components/ui/ProductCard'
 
+const CATEGORY_SLUG_ALIASES = {
+  'men-s-stitched': 'mens-stitched',
+  'men-s-unstitched': 'mens-unstitched',
+  'women-s-stitched': 'womens-stitched',
+}
+
 export default function CategoryPage() {
   const { slug, subSlug } = useParams()
   const [searchParams] = useSearchParams()
@@ -47,8 +53,9 @@ export default function CategoryPage() {
     setLoading(true)
 
     // Normalize category slug for Supabase lookup
-    const isWomenUnstitched = slug?.includes('unstitched') || slug === 'women'
-    const queryCategory = isWomenUnstitched ? 'women-s-unstitched' : slug
+    const queryCategory = slug === 'women'
+      ? 'women-s-unstitched'
+      : (CATEGORY_SLUG_ALIASES[slug] || slug)
 
     const queryParams = {
       category: queryCategory,
