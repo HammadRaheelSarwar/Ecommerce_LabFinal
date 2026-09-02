@@ -77,6 +77,10 @@ exports.getProducts = async (req, res, next) => {
       query = query.ilike('subcategory', `%${queryParams.subcategory}%`);
     }
 
+    if (queryParams.tag) {
+      query = query.contains('tags', [queryParams.tag]);
+    }
+
     if (queryParams.featured === 'true' || queryParams.featured === true || queryParams.isFeatured === 'true' || queryParams.isFeatured === true) {
       query = query.eq('is_featured', true);
     }

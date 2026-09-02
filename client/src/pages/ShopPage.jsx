@@ -16,6 +16,15 @@ const SORT_OPTIONS = [
   { label: 'Top Rated',          value: 'rating' },
 ]
 
+const OCCASION_TITLES = {
+  festive: 'Eid Edit',
+  wedding: 'Wedding Ready',
+  casual: 'Daily Wear',
+  formal: 'Office Looks',
+  perfume: 'Glow-up',
+  gift: 'Gift Mode',
+}
+
 export default function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
@@ -39,6 +48,7 @@ export default function ShopPage() {
   const maxPrice    = searchParams.get('maxPrice') || ''
   const gender      = searchParams.get('gender') || ''
   const origin      = searchParams.get('origin') || ''
+  const tag         = searchParams.get('tag') || ''
 
   const setParam = (key, value) => {
     const p = new URLSearchParams(searchParams)
@@ -63,6 +73,7 @@ export default function ShopPage() {
         minPrice,
         maxPrice,
         gender,
+        tag: tag || undefined,
         page,
         limit: LIMIT,
       })
@@ -70,7 +81,7 @@ export default function ShopPage() {
       setTotal(res.data.pagination?.total ?? res.data.total ?? 0)
     } catch (_) {}
     finally { setLoading(false) }
-  }, [category, subcategory, sort, isNewArrival, isBestSeller, isOnSale, isFeatured, minPrice, maxPrice, gender, page])
+  }, [category, subcategory, sort, isNewArrival, isBestSeller, isOnSale, isFeatured, minPrice, maxPrice, gender, tag, page])
 
   useEffect(() => { fetchProducts() }, [fetchProducts])
 
@@ -105,11 +116,12 @@ export default function ShopPage() {
   else if (isOnSale) pageTitle = 'Festive Discounts & Deals'
   else if (isFeatured) pageTitle = 'Featured Collection'
   else if (origin === 'china') pageTitle = 'Shop Factory-Direct from China'
+  else if (tag) pageTitle = OCCASION_TITLES[tag] || tag.replace(/-/g, ' ')
   else if (subcategory) pageTitle = subcategory.replace(/-/g, ' ')
   else if (category) pageTitle = category
 
   const totalPages = Math.ceil(total / LIMIT)
-  const hasFilters = !!(category || subcategory || isNewArrival || isBestSeller || isOnSale || isFeatured || minPrice || maxPrice || gender || origin)
+  const hasFilters = !!(category || subcategory || isNewArrival || isBestSeller || isOnSale || isFeatured || minPrice || maxPrice || gender || origin || tag)
 
   return (
     <div className="min-h-screen bg-[#f8f6f0] text-gray-900 pb-16">
@@ -143,7 +155,7 @@ export default function ShopPage() {
           {/* Quick Category Chips Bar */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pt-5 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
             {quickChips.map(chip => {
-              const isActive = (chip.type === 'all' && !category && !subcategory && !origin && !isOnSale) ||
+              const isActive = (chip.type === 'all' && !category && !subcategory && !origin && !isOnSale && !tag) ||
                 (chip.type === 'category' && category === chip.val) ||
                 (chip.type === 'subcategory' && subcategory === chip.val) ||
                 (chip.type === 'deals' && isOnSale === 'true')
@@ -200,6 +212,7 @@ export default function ShopPage() {
             {isFeatured   && <FilterPill label="Featured" onRemove={() => setParam('isFeatured', '')} />}
             {origin       && <FilterPill label={`Origin: ${origin}`} onRemove={() => setParam('origin', '')} />}
             {category     && <FilterPill label={`Category: ${category}`} onRemove={() => setParam('category', '')} />}
+            {tag          && <FilterPill label={`Occasion: ${OCCASION_TITLES[tag] || tag}`} onRemove={() => setParam('tag', '')} />}
             {hasFilters && (
               <button
                 onClick={() => setSearchParams({})}

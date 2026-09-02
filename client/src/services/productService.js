@@ -53,6 +53,8 @@ async function fetchProductsFromSupabase(params = {}) {
       query = query.ilike('subcategory', `%${params.subcategory}%`)
     }
 
+    if (params.tag) query = query.contains('tags', [params.tag])
+
     if (params.featured || params.isFeatured) query = query.eq('is_featured', true)
     if (params.newArrival || params.isNewArrival) query = query.eq('is_new_arrival', true)
     if (params.bestSeller || params.isBestSeller) query = query.eq('is_best_seller', true)
