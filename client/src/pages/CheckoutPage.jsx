@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, ShoppingBag, ChevronRight, ShieldCheck, CheckCircle2, Truck, ArrowLeft } from 'lucide-react'
+import { MapPin, ShoppingBag, ChevronRight, ShieldCheck, CheckCircle2, Truck, ArrowLeft, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useCart } from '../context/CartContext'
 import { orderService } from '../services/orderService'
+import { contentService } from '../services/contentService'
 
 const CITIES = [
   'Lahore', 'Karachi', 'Islamabad', 'Rawalpindi', 'Faisalabad',
@@ -31,6 +32,19 @@ export default function CheckoutPage() {
 
   const shipping = cartSubtotal >= 5000 ? 0 : 200
   const grandTotal = cartSubtotal + shipping
+
+  const [whatsappNumber, setWhatsappNumber] = useState(
+    import.meta.env.VITE_WHATSAPP_NUMBER || '+923064538251'
+  )
+
+  useEffect(() => {
+    contentService.getSettings()
+      .then(res => {
+        const num = res.data?.settings?.ordering?.whatsappNumber || res.data?.settings?.contact?.whatsapp
+        if (num) setWhatsappNumber(num)
+      })
+      .catch(() => {})
+  }, [])
 
   const handleAddressChange = (e) => setAddress(a => ({ ...a, [e.target.name]: e.target.value }))
 
@@ -64,37 +78,48 @@ export default function CheckoutPage() {
 
     try {
       setPlacing(true)
+      const fallbackOrderId = `AA-${Math.floor(100000 + Math.random() * 900000)}`
 
       const payload = {
         items: cart.map(item => ({
-          productId: item.productId,
+          productId: item.productId || item._id,
           name: item.name,
+          sku: item.sku || '',
           image: item.image,
           size: item.size,
           color: item.color,
           quantity: item.quantity,
+          unitPrice: item.price,
         })),
         shippingAddress: address,
         paymentMethod: 'cod',
         customerNotes: notes,
       }
 
-      const res = await orderService.create(payload)
-      const order = res.data.order
+      let orderId = fallbackOrderId
+      try {
+        const res = await orderService.create(payload)
+        if (res.data?.order?.orderNumber || res.data?.order?.orderId || res.data?.order?._id) {
+          orderId = res.data.order.orderNumber || res.data.order.orderId || res.data.order._id
+        }
+      } catch (backendErr) {
+        console.warn('Backend order sync fallback to local/WhatsApp:', backendErr)
+      }
 
       // Record to user's device order history (aa_user_orders)
       try {
         const existing = JSON.parse(localStorage.getItem('aa_user_orders') || '[]')
         const newLocalOrder = {
-          _id: order._id || `ord_${Date.now()}`,
-          orderId: order.orderId || `AA-${Date.now()}`,
+          _id: `ord_${Date.now()}`,
+          orderId: orderId,
           createdAt: new Date().toISOString(),
           orderStatus: 'confirmed',
-          channel: 'Direct Checkout',
+          channel: 'WhatsApp COD',
           totalItems: cart.reduce((s, it) => s + it.quantity, 0),
-          grandTotal: order.grandTotal || grandTotal,
+          grandTotal: grandTotal,
           items: cart.map(item => ({
             name: item.name,
+            sku: item.sku || '',
             size: item.size,
             color: item.color,
             quantity: item.quantity,
@@ -105,39 +130,54 @@ export default function CheckoutPage() {
         localStorage.setItem('aa_user_orders', JSON.stringify([newLocalOrder, ...existing]))
       } catch (_) {}
 
+      // Construct detailed WhatsApp message
+      let msg = `🛍️ *NEW ORDER - ALL AVAILABLE*\n`
+      msg += `*Order Reference:* #${orderId}\n`
+      msg += `*Date:* ${new Date().toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n`
+
+      msg += `👤 *CUSTOMER & DELIVERY DETAILS:*\n`
+      msg += `• *Full Name:* ${address.fullName.trim()}\n`
+      msg += `• *WhatsApp / Mobile:* ${address.phone.trim()}\n`
+      msg += `• *City:* ${address.city.trim()}\n`
+      msg += `• *Complete Street Address:* ${address.address.trim()}\n`
+      if (notes.trim()) {
+        msg += `• *Special Instructions:* ${notes.trim()}\n`
+      }
+      msg += `\n`
+
+      msg += `📦 *ORDERED ITEMS (${cart.reduce((sum, it) => sum + it.quantity, 0)} items):*\n`
+      cart.forEach((item, index) => {
+        const itemTotal = (item.price || 0) * (item.quantity || 1)
+        msg += `${index + 1}. *${item.name}*\n`
+        if (item.sku) msg += `   • *Item ID/SKU:* ${item.sku}\n`
+        if (item.size) msg += `   • *Size:* ${item.size}\n`
+        if (item.color) msg += `   • *Color:* ${item.color}\n`
+        msg += `   • *Qty:* ${item.quantity} × PKR ${(item.price || 0).toLocaleString()} = PKR ${itemTotal.toLocaleString()}\n`
+        if (item.image) {
+          const absImg = item.image.startsWith('http') ? item.image : `${window.location.origin}${item.image}`
+          msg += `   • *Product Image:* ${absImg}\n`
+        }
+        msg += `\n`
+      })
+
+      msg += `💰 *ORDER SUMMARY & BILLING:*\n`
+      msg += `• *Subtotal:* PKR ${cartSubtotal.toLocaleString()}\n`
+      msg += `• *Shipping Delivery:* ${shipping === 0 ? 'FREE' : `PKR ${shipping}`}\n`
+      msg += `• *Total Amount to Pay:* PKR ${grandTotal.toLocaleString()}\n`
+      msg += `• *Payment Method:* Cash on Delivery (COD)\n\n`
+      msg += `Please confirm my order for dispatch. Thank you!`
+
+      const cleanNum = whatsappNumber.replace(/[^0-9]/g, '')
+      const waUrl = `https://wa.me/${cleanNum}?text=${encodeURIComponent(msg)}`
+
       clearCart()
-      toast.success('Order placed successfully! Cash on Delivery confirmed.')
-      navigate(`/order-confirmation/${order.orderId || order._id}`)
+      toast.success('Redirecting to WhatsApp to place your order...', { duration: 3000 })
+
+      // Open WhatsApp directly
+      window.location.href = waUrl
     } catch (err) {
       console.error('Checkout error:', err)
-      // If server error, still save order locally so user doesn't lose their transaction
-      const fallbackOrderId = `AA-${Math.floor(100000 + Math.random() * 900000)}`
-      try {
-        const existing = JSON.parse(localStorage.getItem('aa_user_orders') || '[]')
-        const newLocalOrder = {
-          _id: `ord_${Date.now()}`,
-          orderId: fallbackOrderId,
-          createdAt: new Date().toISOString(),
-          orderStatus: 'confirmed',
-          channel: 'Cash on Delivery',
-          totalItems: cart.reduce((s, it) => s + it.quantity, 0),
-          grandTotal: grandTotal,
-          items: cart.map(item => ({
-            name: item.name,
-            size: item.size,
-            color: item.color,
-            quantity: item.quantity,
-            price: item.price,
-            image: item.image,
-          })),
-        }
-        localStorage.setItem('aa_user_orders', JSON.stringify([newLocalOrder, ...existing]))
-        clearCart()
-        toast.success('Order placed! COD confirmed.')
-        navigate(`/order-confirmation/${fallbackOrderId}`)
-      } catch {
-        toast.error('Failed to place order. Please try again.')
-      }
+      toast.error('Failed to prepare order. Please try again.')
     } finally {
       setPlacing(false)
     }
@@ -348,13 +388,13 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={placing}
-                className="w-full mt-6 py-4 rounded-2xl bg-gradient-to-r from-[#0c5a37] to-[#00b884] hover:from-[#09472b] hover:to-[#029e71] text-white font-sans font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full mt-6 py-4 rounded-2xl bg-gradient-to-r from-[#0c5a37] to-[#00b884] hover:from-[#09472b] hover:to-[#029e71] text-white font-sans font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer"
               >
                 {placing ? (
-                  <span>Confirming Order...</span>
+                  <span>Redirecting to WhatsApp...</span>
                 ) : (
                   <>
-                    <CheckCircle2 size={18} />
+                    <MessageSquare size={19} className="fill-white" />
                     <span>CONFIRM ORDER (CASH ON DELIVERY)</span>
                   </>
                 )}
