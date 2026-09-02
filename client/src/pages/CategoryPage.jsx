@@ -116,7 +116,7 @@ export default function CategoryPage() {
   }, [products, sortBy, priceFilter])
 
   const categoryName = category?.name || slug.replace(/-/g, ' ')
-  const currentSubTitle = activeSubcategory || categoryName
+  const currentSubTitle = activeSubcategory?.name || categoryName
 
   return (
     <div className="bg-[#FAF6F0] min-h-screen pb-16">
